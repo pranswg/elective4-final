@@ -2,6 +2,20 @@ import { FormEvent, useMemo, useState } from "react"
 
 type IconName = "home" | "tag" | "house" | "briefcase" | "tool" | "users" | "message" | "bolt" | "file" | "car" | "search" | "pin" | "heart" | "mail" | "user" | "plus" | "shield" | "chevron" | "arrow" | "close" | "check" | "menu" | "share"
 
+type HelpArticle = {
+  id: string
+  title: string
+  content: string
+  related?: string[]
+}
+
+type HelpTopic = {
+  title: string
+  icon: IconName
+  description: string
+  articles: HelpArticle[]
+}
+
 type Listing = {
   id: number
   category: string
@@ -226,15 +240,29 @@ const categories = [
   },
 ] as const
 
-const helpTopics = [
+const helpTopics: HelpTopic[] = [
   {
     title: "Posting",
     icon: "plus",
-    description: "Create and manage ads",
+    description: "Create, edit, renew, and delete ads",
     articles: [
-      "Create, edit, renew, or delete a post",
-      "Posting limits and allowed categories",
-      "Supported HTML formatting",
+      {
+        id: "posting-create",
+        title: "Create, edit, renew, or delete a post",
+        content: `**Creating a post**\n\n1. Click "Post an ad" in the top bar or on the home page.\n2. Select the appropriate category for your ad.\n3. Fill in the title, price, location, and description.\n4. Add up to 6 photos (optional but recommended).\n5. Review and submit your post.\n\n**Editing a post**\n\nIf you need to make changes to your post, use the email you received when posting. Craigslist sends a management link that allows you to edit or delete your post.\n\n**Renewing a post**\n\nMost free posts remain active for 30 days. Before they expire, you may receive an email with an option to renew. Renewing brings your post back to the top of the listings for that category.\n\n**Deleting a post**\n\nUse the management link from your posting email to delete your post at any time.`,
+        related: ["posting-limits", "posting-html"],
+      },
+      {
+        id: "posting-limits",
+        title: "Posting limits and allowed categories",
+        content: `**Posting limits**\n\n- Most categories are free to post in.\n- Some categories (like jobs in certain cities, cars/trucks, and brokered rentals in some locations) may require payment.\n- Avoid posting the same item multiple times in the same category within 48 hours.\n\n**Allowed content**\n\nAll posts must comply with Craigslist's Terms of Use. Prohibited items include weapons, illegal drugs, stolen goods, and items that violate local laws.\n\n**Category guidelines**\n\nPost in the most relevant category. Misclassified posts may be flagged and removed by the community.`,
+        related: ["posting-create", "posting-prohibited"],
+      },
+      {
+        id: "posting-html",
+        title: "Supported HTML formatting",
+        content: `**Basic formatting**\n\nCraigslist supports limited HTML in post descriptions:\n\n- Line breaks are preserved automatically\n- Simple text formatting is recommended\n- Avoid complex CSS, JavaScript, or embedded iframes\n\n**Best practices**\n\nKeep your description clear and concise. Most successful posts use plain text with good formatting through spacing and line breaks rather than HTML tags.`,
+      },
     ],
   },
   {
@@ -242,9 +270,22 @@ const helpTopics = [
     icon: "search",
     description: "Find exactly what you need",
     articles: [
-      "Search syntax and sorting results",
-      "Location filters and saved alerts",
-      "RSS feeds for new listings",
+      {
+        id: "search-syntax",
+        title: "Search syntax and sorting results",
+        content: `**Basic search**\n\nUse the search bar at the top of any page to search across listings. You can search by keyword, item name, or description.\n\n**Tips for better results**\n\n- Use specific keywords (e.g., "sofa leather" instead of just "furniture")\n- Try different terms if you don't find what you're looking for\n- Check nearby categories - items are sometimes miscategorized\n\n**Sorting**\n\nResults are typically sorted by date (newest first) by default. This helps you see the most recent listings.`,
+        related: ["search-location", "search-alerts"],
+      },
+      {
+        id: "search-location",
+        title: "Location filters and saved alerts",
+        content: `**Location filtering**\n\nUse the location selector in the header to choose your city or area. You can also browse listings in specific neighborhoods.\n\n**Expanding your search**\n\nIf you don't find what you need locally, try nearby cities. Many sellers are willing to travel or you might find better prices in surrounding areas.\n\n**Saved searches**\n\nWhile our prototype doesn't have saved search alerts yet, on the real Craigslist you can save searches and get notified when new listings match your criteria.`,
+      },
+      {
+        id: "search-rss",
+        title: "RSS feeds for new listings",
+        content: `**RSS feeds**\n\nCraigslist provides RSS feeds for search results and category pages. You can subscribe to these feeds in your RSS reader to get notified of new listings without having to check the site manually.\n\n**Using RSS**\n\nAdd "/search/..." or category URLs with ".rss" to your feed reader to stay updated on new postings in your area of interest.`,
+      },
     ],
   },
   {
@@ -252,9 +293,21 @@ const helpTopics = [
     icon: "user",
     description: "Access and update your account",
     articles: [
-      "Create and manage an account",
-      "Reset your password",
-      "Active listings and contact details",
+      {
+        id: "account-create",
+        title: "Create and manage an account",
+        content: `**Creating an account**\n\nWhile you can post without an account using email verification, creating an account makes it easier to manage your posts.\n\n**Managing your posts**\n\nWith an account, you can view all your active posts in one place, renew them, edit them, or delete them without needing to find the original email.\n\n**Account security**\n\nUse a strong, unique password and never share your account credentials with anyone.`,
+      },
+      {
+        id: "account-password",
+        title: "Reset your password",
+        content: `**Resetting your password**\n\n1. Click "Sign in" and then "Forgot password?"\n2. Enter the email address associated with your account\n3. Check your email for a password reset link\n4. Click the link and create a new password\n\n**Tips**\n\nCheck your spam/junk folder if you don't receive the email within a few minutes. Make sure you're using the same email address you used to create your account.`,
+      },
+      {
+        id: "account-listings",
+        title: "Active listings and contact details",
+        content: `**Viewing your listings**\n\nLog into your account to see all your active, expired, and deleted posts in your account dashboard.\n\n**Contact details**\n\nWhen posting, you can choose to show your email directly or use Craigslist's email relay. Email relay keeps your personal email address hidden until you choose to respond.`,
+      },
     ],
   },
   {
@@ -262,9 +315,21 @@ const helpTopics = [
     icon: "file",
     description: "Fees, payments, and invoices",
     articles: [
-      "Paid posting categories",
-      "Accepted payment methods",
-      "Receipts and invoices",
+      {
+        id: "billing-paid",
+        title: "Paid posting categories",
+        content: `**When fees apply**\n\nMost postings are free, but some categories in certain locations require payment:\n\n- Job postings in some major cities\n- Vehicle sales (cars/trucks) in certain areas\n- Some apartment rentals in specific markets\n\n**Pricing**\n\nFees vary by location and category. The exact price will be shown before you complete payment.`,
+      },
+      {
+        id: "billing-payment",
+        title: "Accepted payment methods",
+        content: `**Payment options**\n\nCraigslist accepts major credit and debit cards for paid postings. Payment is processed securely at the time of posting.\n\n**Important notes**\n\n- You will be charged when you publish a paid post\n- Fees are generally non-refundable\n- Make sure your payment information is correct before submitting`,
+      },
+      {
+        id: "billing-receipts",
+        title: "Receipts and invoices",
+        content: `**Getting receipts**\n\nAfter a successful payment, you'll receive a receipt via email. You can also access invoices from your account if you have one.\n\n**Questions about charges**\n\nIf you have questions about a charge or believe there was an error, use the contact form with details about the posting and the charge in question.`,
+      },
     ],
   },
   {
@@ -272,9 +337,24 @@ const helpTopics = [
     icon: "shield",
     description: "Protect yourself and your community",
     articles: [
-      "Recognize scams and phishing",
-      "Safe local transactions",
-      "Report suspicious activity",
+      {
+        id: "safety-scams",
+        title: "Recognize scams and phishing",
+        content: `**Common scams to watch out for**\n\n- **Overpayment scams**: Buyer sends check for more than asking price and asks for refund\n- **Wire transfer requests**: Never wire money or use gift cards as payment\n- **Fake rental listings**: Be cautious of deals that seem too good to be true\n- **Phishing emails**: Craigslist will never ask for your password via email\n\n**Red flags**\n\n- Requests to communicate outside of Craigslist\n- Pressure to act quickly\n- Unusual payment methods\n- Requests for personal financial information\n\n**Rule #1: Deal locally, face-to-face**`,
+        related: ["safety-transactions", "safety-report"],
+      },
+      {
+        id: "safety-transactions",
+        title: "Safe local transactions",
+        content: `**Meeting safely**\n\n- Meet in a public place (coffee shop, police station parking lot, etc.)\n- Bring a friend if possible\n- Tell someone where you're going\n- Trust your instincts\n\n**Payment safety**\n\n- Cash is safest for in-person transactions\n- For high-value items, consider meeting at a bank\n- Never give out your banking info, SSN, or other sensitive details\n- Be wary of cashier's checks or money orders from unknown sources\n\n**For sellers**\n\n- Don't ship items without verified payment\n- Be cautious of buyers who want to pay more than asking price\n- Verify payment before handing over items`,
+        related: ["safety-scams", "safety-report"],
+      },
+      {
+        id: "safety-report",
+        title: "Report suspicious activity",
+        content: `**Flagging posts**\n\nIf you see a post that violates Craigslist's terms of use or looks like a scam, use the "flag" button on the post. Community flagging helps keep the site safe.\n\n**Reporting to authorities**\n\nFor serious crimes or fraud, report to your local law enforcement. You can also report internet fraud to the FTC at ReportFraud.ftc.gov.\n\n**What to include**\n\nWhen reporting, include screenshots, emails, phone numbers, and any other details that might help with the investigation.`,
+        related: ["safety-scams", "safety-transactions"],
+      },
     ],
   },
   {
@@ -282,9 +362,24 @@ const helpTopics = [
     icon: "briefcase",
     description: "Policies and official requests",
     articles: [
-      "Terms of Use and Privacy Policy",
-      "Prohibited items and copyright",
-      "Law enforcement inquiries",
+      {
+        id: "legal-terms",
+        title: "Terms of Use and Privacy Policy",
+        content: `**Terms of Use**\n\nBy using Craigslist, you agree to comply with our Terms of Use. Key points include:\n\n- You must be 18 or older to use certain services\n- Prohibited uses include illegal activities, spam, and harassment\n- We reserve the right to remove content that violates our terms\n\n**Privacy Policy**\n\nWe collect minimal information necessary to provide our services. We don't sell your personal information to third parties. Email relay helps protect your privacy.\n\n**Your responsibilities**\n\nYou're responsible for the content you post and for your interactions with other users.`,
+        related: ["legal-prohibited", "legal-law"],
+      },
+      {
+        id: "legal-prohibited",
+        title: "Prohibited items and copyright",
+        content: `**Prohibited items**\n\nThe following are not allowed on Craigslist:\n\n- Weapons, explosives, or ammunition\n- Illegal drugs or drug paraphernalia\n- Stolen property\n- Human organs or body parts\n- Prostitution or escort services\n- Items that promote hatred or violence\n\n**Copyright**\n\nDon't post copyrighted material without permission. This includes pirated software, movies, music, or other protected content.\n\n**Enforcement**\n\nViolations may result in post removal and account suspension.`,
+        related: ["legal-terms", "legal-law"],
+      },
+      {
+        id: "legal-law",
+        title: "Law enforcement inquiries",
+        content: `**Responding to legal requests**\n\nCraigslist cooperates with valid law enforcement requests in accordance with applicable laws and our policies.\n\n**How to submit requests**\n\nLaw enforcement agencies should submit requests through proper legal channels with appropriate documentation.\n\n**User privacy**\n\nWe balance user privacy with legal obligations and only disclose information when required by law or valid legal process.`,
+        related: ["legal-terms", "legal-prohibited"],
+      },
     ],
   },
   {
@@ -292,12 +387,24 @@ const helpTopics = [
     icon: "message",
     description: "Answers to common questions",
     articles: [
-      "How post flagging works",
-      "Email relay and post duration",
-      "Troubleshoot common error codes",
+      {
+        id: "faq-flagging",
+        title: "How post flagging works",
+        content: `**What is flagging?**\n\nUsers can flag posts that are miscategorized, spam, prohibited, or otherwise violate Craigslist guidelines.\n\n**What happens when a post is flagged?**\n\nIf enough users flag a post, it may be automatically removed. Posts can also be reviewed by staff.\n\n**Flagging guidelines**\n\nOnly flag posts that genuinely violate the rules. False or malicious flagging is not helpful and goes against community guidelines.\n\n**Best of Craigslist**\n\nUsers can also flag posts as "best of" if they're funny, helpful, or particularly well-done.`,
+      },
+      {
+        id: "faq-email",
+        title: "Email relay and post duration",
+        content: `**Email relay**\n\nWhen you use email relay, Craigslist creates a temporary email address that forwards messages to your real email. Your real email address is never shown publicly. You can block the relay at any time.\n\n**Post duration**\n\n- Most free posts: 30 days\n- Some categories may have different durations\n- You'll receive an email reminder before expiration\n- You can renew eligible posts\n\n**Reposting**\n\nAfter a post expires or is deleted, you can create a new post. Avoid reposting identical content too frequently.`,
+      },
+      {
+        id: "faq-errors",
+        title: "Troubleshoot common error codes",
+        content: `**Posting errors**\n\n- **"too many posts"**: You've exceeded posting limits for that category/time period. Wait before posting again.\n- **"blocked"**: Your IP or account may be temporarily blocked. This usually resolves itself.\n- **"invalid category"**: Make sure you're posting in the correct category.\n\n**Image upload issues**\n\n- Keep images under size limits\n- Use common formats (JPG, PNG)\n- If uploads fail, try fewer images or smaller files\n\n**Email issues**\n\n- Check spam folder\n- Make sure your email address is correct\n- Some email providers block Craigslist emails - try a different email if problems persist`,
+      },
     ],
   },
-] as const
+]
 
 const photo = (id: string) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=700&q=85`
@@ -857,124 +964,419 @@ function HelpPage({
   onAction: (message: string) => void
 }) {
   const [helpQuery, setHelpQuery] = useState("")
+  const [helpView, setHelpView] = useState<"home" | "topic" | "article" | "contact" | "forums">("home")
+  const [selectedTopicTitle, setSelectedTopicTitle] = useState<string | null>(null)
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
+  const [contactForm, setContactForm] = useState({
+    issueType: "",
+    email: "",
+    subject: "",
+    message: "",
+  })
+
   const normalizedQuery = helpQuery.trim().toLowerCase()
-  const filteredTopics = helpTopics.filter(
-    (topic) =>
-      !normalizedQuery ||
-      `${topic.title} ${topic.description} ${topic.articles.join(" ")}`
-        .toLowerCase()
-        .includes(normalizedQuery),
-  )
+  
+  const selectedTopic = helpTopics.find((t) => t.title === selectedTopicTitle)
+  const selectedArticle = selectedTopic?.articles.find((a) => a.id === selectedArticleId)
+  
+  const searchResults = useMemo(() => {
+    if (!normalizedQuery) return []
+    const results: Array<{ topic: HelpTopic; article: HelpArticle }> = []
+    helpTopics.forEach((topic) => {
+      topic.articles.forEach((article) => {
+        if (
+          article.title.toLowerCase().includes(normalizedQuery) ||
+          article.content.toLowerCase().includes(normalizedQuery) ||
+          topic.title.toLowerCase().includes(normalizedQuery)
+        ) {
+          results.push({ topic, article })
+        }
+      })
+    })
+    return results.slice(0, 10)
+  }, [normalizedQuery])
+
+  const handleBack = () => {
+    if (helpView === "article") {
+      setHelpView("topic")
+      setSelectedArticleId(null)
+    } else if (helpView === "topic") {
+      setHelpView("home")
+      setSelectedTopicTitle(null)
+      setHelpQuery("")
+    } else if (helpView === "contact" || helpView === "forums") {
+      setHelpView("home")
+    } else {
+      onBack()
+    }
+  }
+
+  const getBreadcrumb = () => {
+    if (helpView === "article" && selectedTopic && selectedArticle) {
+      return (
+        <div className="help-breadcrumb">
+          <button onClick={() => { setHelpView("home"); setSelectedTopicTitle(null) }}>Help Center</button>
+          <span>›</span>
+          <button onClick={() => { setHelpView("topic"); setSelectedArticleId(null) }}>{selectedTopic.title}</button>
+          <span>›</span>
+          <span>{selectedArticle.title}</span>
+        </div>
+      )
+    } else if (helpView === "topic" && selectedTopic) {
+      return (
+        <div className="help-breadcrumb">
+          <button onClick={() => { setHelpView("home"); setSelectedTopicTitle(null); setHelpQuery("") }}>Help Center</button>
+          <span>›</span>
+          <span>{selectedTopic.title}</span>
+        </div>
+      )
+    } else if (helpView === "contact") {
+      return (
+        <div className="help-breadcrumb">
+          <button onClick={() => setHelpView("home")}>Help Center</button>
+          <span>›</span>
+          <span>Contact support</span>
+        </div>
+      )
+    } else if (helpView === "forums") {
+      return (
+        <div className="help-breadcrumb">
+          <button onClick={() => setHelpView("home")}>Help Center</button>
+          <span>›</span>
+          <span>Community help forums</span>
+        </div>
+      )
+    }
+    return null
+  }
+
+  const submitContact = (e: FormEvent) => {
+    e.preventDefault()
+    onAction("Support request submitted. We'll respond to your email.")
+    setHelpView("home")
+    setContactForm({ issueType: "", email: "", subject: "", message: "" })
+  }
 
   return (
     <div className="help-page">
-      <button className="back-button" onClick={onBack}>
+      <button className="back-button" onClick={handleBack}>
         <Icon name="arrow" size={16} />
-        Back to home
+        {helpView === "home" ? "Back to home" : "Back"}
       </button>
-      <section className="help-hero">
-        <span>Craigslist support</span>
-        <h1>How can we help?</h1>
-        <p>
-          Find guidance for posting, searching, account management, safety, and
-          more.
-        </p>
-        <label className="help-search">
-          <Icon name="search" size={20} />
-          <input
-            value={helpQuery}
-            onChange={(event) => setHelpQuery(event.target.value)}
-            placeholder="Search help topics"
-            aria-label="Search help topics"
-          />
-          {helpQuery && (
-            <button
-              onClick={() => setHelpQuery("")}
-              aria-label="Clear help search"
-            >
-              <Icon name="close" size={16} />
-            </button>
-          )}
-        </label>
-      </section>
+      
+      {getBreadcrumb()}
 
-      <section className="help-topics">
-        <div className="help-section-heading">
-          <div>
-            <h2>Help topics</h2>
-            <p>Browse documentation by subject.</p>
-          </div>
-          <span>{filteredTopics.length} topics</span>
-        </div>
-        {filteredTopics.length ? (
-          <div className="help-grid">
-            {filteredTopics.map((topic) => (
-              <article className="help-card" key={topic.title}>
-                <div className="help-card-heading">
-                  <span>
-                    <Icon name={topic.icon} size={22} />
-                  </span>
+      {helpView === "home" && (
+        <>
+          <section className="help-hero">
+            <span>Craigslist support</span>
+            <h1>How can we help?</h1>
+            <p>
+              Find guidance for posting, searching, account management, safety, and
+              more.
+            </p>
+            <label className="help-search">
+              <Icon name="search" size={20} />
+              <input
+                value={helpQuery}
+                onChange={(event) => setHelpQuery(event.target.value)}
+                placeholder="Search help articles..."
+                aria-label="Search help articles"
+              />
+              {helpQuery && (
+                <button
+                  onClick={() => setHelpQuery("")}
+                  aria-label="Clear help search"
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              )}
+            </label>
+          </section>
+
+          {normalizedQuery && searchResults.length > 0 && (
+            <section className="help-search-results">
+              <div className="help-section-heading">
+                <h2>Search results</h2>
+                <span>{searchResults.length} result{searchResults.length === 1 ? "" : "s"}</span>
+              </div>
+              <div className="help-search-list">
+                {searchResults.map(({ topic, article }) => (
+                  <button
+                    key={article.id}
+                    className="help-search-item"
+                    onClick={() => {
+                      setSelectedTopicTitle(topic.title)
+                      setSelectedArticleId(article.id)
+                      setHelpView("article")
+                      setHelpQuery("")
+                    }}
+                  >
+                    <div>
+                      <strong>{article.title}</strong>
+                      <small>{topic.title} › {article.title}</small>
+                    </div>
+                    <Icon name="arrow" size={16} />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {normalizedQuery && searchResults.length === 0 && (
+            <div className="help-empty">
+              <Icon name="search" size={28} />
+              <h3>No results found</h3>
+              <p>Try different keywords or browse topics below.</p>
+            </div>
+          )}
+
+          {!normalizedQuery && (
+            <>
+              <section className="help-topics">
+                <div className="help-section-heading">
                   <div>
-                    <h3>{topic.title}</h3>
-                    <p>{topic.description}</p>
+                    <h2>Help topics</h2>
+                    <p>Browse documentation by subject.</p>
                   </div>
                 </div>
-                <ul>
-                  {topic.articles.map((article) => (
-                    <li key={article}>
-                      <button
-                        onClick={() => onAction(`${article} opened`)}
-                      >
-                        {article}
-                        <Icon name="arrow" size={14} />
-                      </button>
-                    </li>
+                <div className="help-topics-list">
+                  {helpTopics.map((topic) => (
+                    <button
+                      key={topic.title}
+                      className="help-topic-row"
+                      onClick={() => {
+                        setSelectedTopicTitle(topic.title)
+                        setHelpView("topic")
+                      }}
+                    >
+                      <span className="help-topic-icon">
+                        <Icon name={topic.icon} size={20} />
+                      </span>
+                      <div>
+                        <strong>{topic.title}</strong>
+                        <small>{topic.description}</small>
+                      </div>
+                      <Icon name="arrow" size={16} />
+                    </button>
                   ))}
-                </ul>
-              </article>
+                </div>
+              </section>
+
+              <section className="help-resources">
+                <button onClick={() => setHelpView("forums")}>
+                  <span>
+                    <Icon name="users" size={22} />
+                  </span>
+                  <div>
+                    <strong>Community help forums</strong>
+                    <small>Ask questions and learn from other users.</small>
+                  </div>
+                  <Icon name="arrow" size={17} />
+                </button>
+                <button onClick={() => onAction("All systems are operational")}>
+                  <span>
+                    <Icon name="check" size={22} />
+                  </span>
+                  <div>
+                    <strong>System status</strong>
+                    <small>All Craigslist services are operational.</small>
+                  </div>
+                  <i>Operational</i>
+                </button>
+                <button onClick={() => setHelpView("contact")}>
+                  <span>
+                    <Icon name="mail" size={22} />
+                  </span>
+                  <div>
+                    <strong>Contact support</strong>
+                    <small>Send a request to the Craigslist support team.</small>
+                  </div>
+                  <Icon name="arrow" size={17} />
+                </button>
+              </section>
+            </>
+          )}
+        </>
+      )}
+
+      {helpView === "topic" && selectedTopic && (
+        <section className="help-topic-detail">
+          <div className="help-topic-header">
+            <span className="help-topic-icon-large">
+              <Icon name={selectedTopic.icon} size={28} />
+            </span>
+            <div>
+              <h1>{selectedTopic.title}</h1>
+              <p>{selectedTopic.description}</p>
+            </div>
+          </div>
+          <div className="help-articles-list">
+            {selectedTopic.articles.map((article) => (
+              <button
+                key={article.id}
+                className="help-article-row"
+                onClick={() => {
+                  setSelectedArticleId(article.id)
+                  setHelpView("article")
+                }}
+              >
+                <span>{article.title}</span>
+                <Icon name="arrow" size={16} />
+              </button>
             ))}
           </div>
-        ) : (
-          <div className="help-empty">
-            <Icon name="search" size={28} />
-            <h3>No help topics found</h3>
-            <p>Try a shorter or more general search.</p>
-          </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      <section className="help-resources">
-        <button onClick={() => onAction("Community help forums opened")}>
-          <span>
-            <Icon name="users" size={22} />
-          </span>
-          <div>
-            <strong>Community help forums</strong>
-            <small>Ask questions and learn from other users.</small>
+      {helpView === "article" && selectedArticle && selectedTopic && (
+        <section className="help-article-detail">
+          <h1>{selectedArticle.title}</h1>
+          <div className="help-article-content">
+            {selectedArticle.content.split('\n\n').map((paragraph, idx) => {
+              if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
+                return <h2 key={idx}>{paragraph.slice(2, -2)}</h2>
+              }
+              const lines = paragraph.split('\n')
+              if (lines.every(l => l.match(/^\d+\./))) {
+                return (
+                  <ol key={idx}>
+                    {lines.map((line, i) => (
+                      <li key={i}>{line.replace(/^\d+\.\s*/, '')}</li>
+                    ))}
+                  </ol>
+                )
+              }
+              if (lines.every(l => l.startsWith('- '))) {
+                return (
+                  <ul key={idx}>
+                    {lines.map((line, i) => (
+                      <li key={i}>{line.slice(2)}</li>
+                    ))}
+                  </ul>
+                )
+              }
+              return <p key={idx}>{paragraph}</p>
+            })}
           </div>
-          <Icon name="arrow" size={17} />
-        </button>
-        <button onClick={() => onAction("All systems are operational")}>
-          <span>
-            <Icon name="check" size={22} />
-          </span>
-          <div>
-            <strong>System status</strong>
-            <small>All Craigslist services are operational.</small>
+          {selectedArticle.related && selectedArticle.related.length > 0 && (
+            <div className="help-related">
+              <h3>Related articles</h3>
+              <div className="help-related-list">
+                {selectedArticle.related.map((relId) => {
+                  const relArticle = selectedTopic.articles.find(a => a.id === relId)
+                  if (!relArticle) return null
+                  return (
+                    <button
+                      key={relId}
+                      onClick={() => {
+                        setSelectedArticleId(relId)
+                        window.scrollTo({ top: 0, behavior: "smooth" })
+                      }}
+                    >
+                      {relArticle.title}
+                      <Icon name="arrow" size={14} />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          <div className="help-feedback">
+            <p>Was this article helpful?</p>
+            <div className="help-feedback-buttons">
+              <button onClick={() => onAction("Thanks for your feedback")}>Yes</button>
+              <button onClick={() => onAction("Thanks for your feedback - we'll improve this")}>No</button>
+            </div>
           </div>
-          <i>Operational</i>
-        </button>
-        <button onClick={() => onAction("Support contact form opened")}>
-          <span>
-            <Icon name="mail" size={22} />
-          </span>
-          <div>
-            <strong>Contact support</strong>
-            <small>Send a request to the Craigslist support team.</small>
+        </section>
+      )}
+
+      {helpView === "contact" && (
+        <section className="help-contact">
+          <div className="help-contact-header">
+            <h1>Contact support</h1>
+            <p>Use this form for issues that cannot be resolved with the help articles above.</p>
           </div>
-          <Icon name="arrow" size={17} />
-        </button>
-      </section>
+          <form className="help-contact-form" onSubmit={submitContact}>
+            <label>
+              <span>Issue type *</span>
+              <select
+                required
+                value={contactForm.issueType}
+                onChange={(e) => setContactForm({...contactForm, issueType: e.target.value})}
+              >
+                <option value="">Select an issue type</option>
+                <option value="posting">Posting problems</option>
+                <option value="account">Account access</option>
+                <option value="billing">Paid ads or billing</option>
+                <option value="email">Email relay issues</option>
+                <option value="abuse">Harassment or abuse</option>
+                <option value="technical">Technical errors</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              <span>Email address *</span>
+              <input
+                type="email"
+                required
+                value={contactForm.email}
+                onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                placeholder="your.email@example.com"
+              />
+            </label>
+            <label>
+              <span>Subject *</span>
+              <input
+                required
+                value={contactForm.subject}
+                onChange={(e) => setContactForm({...contactForm, subject: e.target.value})}
+                placeholder="Brief description of the issue"
+              />
+            </label>
+            <label>
+              <span>Message *</span>
+              <textarea
+                required
+                rows={6}
+                value={contactForm.message}
+                onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
+                placeholder="Please include posting ID, city, category, and any error messages..."
+              />
+            </label>
+            <button type="submit" className="help-contact-submit">Submit request</button>
+          </form>
+          <div className="help-contact-note">
+            <p><strong>Note:</strong> Craigslist has a small support team. Response times may vary, and some reports may not receive individual replies.</p>
+          </div>
+        </section>
+      )}
+
+      {helpView === "forums" && (
+        <section className="help-forums">
+          <div className="help-forums-header">
+            <h1>Community help forums</h1>
+            <p>Ask questions and learn from other experienced Craigslist users.</p>
+          </div>
+          <div className="help-forums-list">
+            <button className="help-forum-row" onClick={() => onAction("CL Help Desk Forum opened")}>
+              <div>
+                <strong>CL Help Desk Forum</strong>
+                <small>Tips from experienced users</small>
+              </div>
+              <Icon name="arrow" size={16} />
+            </button>
+            <button className="help-forum-row" onClick={() => onAction("CL Feedback Forum opened")}>
+              <div>
+                <strong>CL Feedback Forum</strong>
+                <small>Suggestion box for improvements</small>
+              </div>
+              <Icon name="arrow" size={16} />
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
