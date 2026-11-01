@@ -2252,7 +2252,7 @@ function App() {
                   </div>
                   <label>
                     Location
-                    <select name="location" defaultValue={selectedCity} className="location-select-scroll">
+                    <select name="location" defaultValue={selectedCity}>
                       {[...cities, "Mandaluyong", "Marikina"].map((city) => (
                         <option key={city}>{city}</option>
                       ))}
