@@ -232,6 +232,38 @@ button { color: inherit; }
   border-radius: 50%;
   background: #e42752;
 }
+.notifications-empty {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 22px 18px 24px;
+  text-align: center;
+}
+.notifications-empty strong {
+  color: #10254b;
+  font-size: 12.5px;
+}
+.notifications-empty p {
+  max-width: 240px;
+  margin: 0;
+  color: #6c7a91;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.notifications-empty button {
+  height: 36px;
+  margin-top: 4px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 6px;
+  background: #6728ca;
+  color: white;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notifications-empty button:hover { background: #5a20b4; }
 .profile svg:first-child {
   width: 34px;
   height: 34px;
@@ -1132,6 +1164,21 @@ h2 { color: #0d2043; font-size: 19px; letter-spacing: -.4px; margin: 0; }
 .modal-heading > span { width: 43px; height: 43px; display: grid; place-items: center; border-radius: 50%; color: #6728ca; background: #f0eafe; }
 .modal-heading h2 { font-size: 20px; }
 .modal-heading p { margin: 4px 0 0; color: #758198; font-size: 12px; }
+.modal-login-prompt { display: grid; gap: 16px; }
+.modal-login-prompt p {
+  margin: 0;
+  color: #5d6d85;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.modal-login-prompt > div { display: flex; gap: 8px; }
+.modal-login-prompt button {
+  flex: 1;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .login-modal { width: min(380px, 100%); }
 .login-form { display: grid; gap: 14px; }
 .login-form > label {
@@ -3323,9 +3370,17 @@ select.location-select-limited:focus {
     font-size: 13px;
   }
   .profile-menu { width: 210px; }
+  .notifications-menu {
+    right: -50px;
+    width: min(320px, calc(100vw - 20px));
+  }
   .notification-item { min-height: 48px; padding: 12px 14px; }
   .notification-item strong { font-size: 12px; }
   .notification-item small { font-size: 11px; white-space: normal; }
+  .notifications-empty { padding: 20px 16px 22px; }
+  .notifications-empty strong { font-size: 13px; }
+  .notifications-empty p { font-size: 11.5px; }
+  .notifications-empty button { min-height: 40px; }
   .notifications-head button {
     min-height: 32px;
     padding: 4px 6px;

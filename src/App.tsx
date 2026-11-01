@@ -2080,9 +2080,11 @@ function App() {
       }))
     return [...messages, ...recentListings]
   }, [cityFilter, conversations, listings])
-  const unreadNotificationCount = notifications.filter(
-    (notification) => !readNotifications.includes(notification.key),
-  ).length
+  const unreadNotificationCount = account
+    ? notifications.filter(
+        (notification) => !readNotifications.includes(notification.key),
+      ).length
+    : 0
   const activeCategory = categories.find((category) => category.title === active)
   const showToast = (message: string) => {
     setToast(message)
@@ -2743,39 +2745,55 @@ function App() {
               >
                 <div className="notifications-head">
                   <strong>Notifications</strong>
-                  {unreadNotificationCount > 0 && (
+                  {account && unreadNotificationCount > 0 && (
                     <button onClick={markAllNotificationsRead}>
                       Mark all read
                     </button>
                   )}
                 </div>
-                <div className="notifications-list">
-                  {notifications.map((notification) => (
-                    <button
-                      className={`notification-item${
-                        readNotifications.includes(notification.key)
-                          ? " read"
-                          : ""
-                      }`}
-                      key={notification.key}
-                      onClick={() => openNotification(notification)}
-                    >
-                      <span className="notification-icon">
-                        <Icon
-                          name={
-                            notification.kind === "message" ? "mail" : "tag"
-                          }
-                          size={15}
-                        />
-                      </span>
-                      <span>
-                        <strong>{notification.title}</strong>
-                        <small>{notification.detail}</small>
-                      </span>
-                      {!readNotifications.includes(notification.key) && <i />}
+                {account ? (
+                  <div className="notifications-list">
+                    {notifications.map((notification) => (
+                      <button
+                        className={`notification-item${
+                          readNotifications.includes(notification.key)
+                            ? " read"
+                            : ""
+                        }`}
+                        key={notification.key}
+                        onClick={() => openNotification(notification)}
+                      >
+                        <span className="notification-icon">
+                          <Icon
+                            name={
+                              notification.kind === "message" ? "mail" : "tag"
+                            }
+                            size={15}
+                          />
+                        </span>
+                        <span>
+                          <strong>{notification.title}</strong>
+                          <small>{notification.detail}</small>
+                        </span>
+                        {!readNotifications.includes(notification.key) && <i />}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="notifications-empty">
+                    <span className="notification-icon">
+                      <Icon name="bell" size={15} />
+                    </span>
+                    <strong>Log in to see notifications</strong>
+                    <p>
+                      Replies, saved searches, and updates about your posts
+                      appear here.
+                    </p>
+                    <button type="button" onClick={openLogin}>
+                      Log in
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2878,12 +2896,14 @@ function App() {
           >
             <Icon name="mail" size={20} />
             <span>Messages</span>
-            <b>
-              {conversations.reduce(
-                (total, conversation) => total + (conversation.unread || 0),
-                0,
-              )}
-            </b>
+            {account && (
+              <b>
+                {conversations.reduce(
+                  (total, conversation) => total + (conversation.unread || 0),
+                  0,
+                )}
+              </b>
+            )}
           </button>
           <button onClick={openHelp}>
             <Icon name="message" size={20} />
@@ -3605,7 +3625,42 @@ function App() {
             )}
             {dialog === "messages" && (
               <>
-                {currentConversation ? (
+                {!account ? (
+                  <>
+                    <div className="modal-heading">
+                      <span>
+                        <Icon name="mail" />
+                      </span>
+                      <div>
+                        <h2 id="modal-title">Messages</h2>
+                        <p>Log in to see your conversations.</p>
+                      </div>
+                    </div>
+                    <div className="modal-login-prompt">
+                      <p>
+                        Messages are tied to your account. Log in to read
+                        replies and continue conversations with buyers and
+                        sellers.
+                      </p>
+                      <div>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={openLogin}
+                        >
+                          Log in
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={openSignup}
+                        >
+                          Sign up
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : currentConversation ? (
                   <div className="conversation">
                     <div className="conversation-heading">
                       <button
