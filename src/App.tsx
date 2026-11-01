@@ -1,6 +1,8 @@
 import { FormEvent, useMemo, useState } from "react"
-
-type IconName = "home" | "tag" | "house" | "briefcase" | "tool" | "users" | "message" | "bolt" | "file" | "car" | "search" | "pin" | "heart" | "mail" | "user" | "plus" | "shield" | "chevron" | "arrow" | "close" | "check" | "menu" | "share" | "calendar"
+import appStoreBadge from "./assets/app-store-badge.svg"
+import googlePlayBadge from "./assets/google-play-badge.png"
+import Icon, { type IconName } from "./components/Icon"
+import SiteMap from "./components/SiteMap"
 
 type HelpArticle = {
   id: string
@@ -29,6 +31,8 @@ type Listing = {
   description: string
   startDate?: string
   venue?: string
+  seller?: string
+  sold?: boolean
 }
 
 type Conversation = {
@@ -42,147 +46,10 @@ type Conversation = {
   messages: { from: "me" | "them"; text: string; time: string }[]
 }
 
-const iconPaths: Record<IconName, React.ReactNode> = {
-  home: (
-    <>
-      <path d="m3 10 9-7 9 7" />
-      <path d="M5 9v11h14V9M9 20v-7h6v7" />
-    </>
-  ),
-  tag: (
-    <>
-      <path d="M20 13 13 20l-9-9V4h7Z" />
-      <circle cx="8.5" cy="8.5" r="1" />
-    </>
-  ),
-  house: (
-    <>
-      <path d="m3 11 9-8 9 8" />
-      <path d="M5 10v10h14V10M9 20v-6h6v6" />
-    </>
-  ),
-  briefcase: (
-    <>
-      <rect x="3" y="7" width="18" height="13" rx="2" />
-      <path d="M8 7V4h8v3M3 12h18M10 10v4h4v-4" />
-    </>
-  ),
-  tool: (
-    <path d="M14.7 6.3a4 4 0 0 0-5-5L12 3.6 8.4 7.2 6.1 4.9a4 4 0 0 0 5 5L4 17l3 3 7.1-7.1a4 4 0 0 0 .6-6.6Z" />
-  ),
-  users: (
-    <>
-      <circle cx="9" cy="8" r="3" />
-      <circle cx="17" cy="7" r="2.5" />
-      <path d="M3 20v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M15 13h1a5 5 0 0 1 5 5v2" />
-    </>
-  ),
-  message: (
-    <>
-      <path d="M4 5h16v11H9l-5 4Z" />
-      <path d="M8 10h.01M12 10h.01M16 10h.01" />
-    </>
-  ),
-  bolt: <path d="m13 2-8 12h7l-1 8 8-12h-7Z" />,
-  file: (
-    <>
-      <path d="M6 2h9l4 4v16H6Z" />
-      <path d="M14 2v5h5M9 12h6M9 16h6" />
-    </>
-  ),
-  car: (
-    <>
-      <path d="m5 11 2-5h10l2 5 2 2v6h-3v-2H6v2H3v-6Z" />
-      <path d="M5 11h14M7 14h.01M17 14h.01" />
-    </>
-  ),
-  search: (
-    <>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-4-4" />
-    </>
-  ),
-  pin: (
-    <>
-      <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
-      <circle cx="12" cy="10" r="2.5" />
-    </>
-  ),
-  heart: (
-    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
-  ),
-  mail: (
-    <>
-      <rect x="2.5" y="4.5" width="19" height="15" rx="2" />
-      <path d="m3 6 9 7 9-7" />
-    </>
-  ),
-  user: (
-    <>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 21a8 8 0 0 1 16 0" />
-    </>
-  ),
-  plus: <path d="M12 5v14M5 12h14" />,
-  shield: (
-    <path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5Zm0 6v7m-3.5-3.5h7" />
-  ),
-  chevron: <path d="m8 10 4 4 4-4" />,
-  arrow: <path d="M5 12h13m-4-4 4 4-4 4" />,
-  close: <path d="m6 6 12 12M18 6 6 18" />,
-  check: <path d="m5 12 4 4L19 6" />,
-  menu: (
-    <>
-      <path d="M4 7h16M4 12h16M4 17h16" />
-    </>
-  ),
-  share: (
-    <>
-      <circle cx="18" cy="5" r="2.5" />
-      <circle cx="6" cy="12" r="2.5" />
-      <circle cx="18" cy="19" r="2.5" />
-      <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
-    </>
-  ),
-  calendar: (
-    <>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </>
-  ),
-}
-
-function Icon({
-  name,
-  size = 22,
-  filled = false,
-}: {
-  name: IconName
-  size?: number
-  filled?: boolean
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {iconPaths[name]}
-    </svg>
-  )
-}
-
 const nav = [
   ["Home", "home"],
   ["Events", "calendar"],
+  ["Site Map", "share"],
   ["For Sale", "tag"],
   ["Housing", "house"],
   ["Jobs", "briefcase"],
@@ -239,7 +106,7 @@ const categories = [
   },
   {
     title: "Resumes",
-    description: "Find a job,\nget noticed",
+    description: "Resumes, job\nwanted",
     icon: "file",
     tone: "indigo",
   },
@@ -250,6 +117,31 @@ const categories = [
     tone: "red",
   },
 ] as const
+
+const RESUME_NOTICE =
+  "Principals only. Recruiters, please don't contact this poster."
+
+const CURRENT_USER = "Juan dela Cruz"
+
+const sellerName = (listing: Listing) => listing.seller ?? CURRENT_USER
+
+const sellerInitials = (name: string) =>
+  name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
+
+const sellerFirstName = (name: string) => name.split(" ")[0]
+
+const isResumeCategory = (category: string) => category === "Resumes"
+
+const categoryLabel = (category: string) =>
+  isResumeCategory(category) ? "resumes / job wanted" : category
+
+const displayPrice = (listing: Listing) =>
+  isResumeCategory(listing.category) ? "$0" : listing.price
 
 const helpTopics: HelpTopic[] = [
   {
@@ -430,6 +322,7 @@ const seedListings: Listing[] = [
     image: photo("photo-1724582586529-62622e50c0b3"),
     description:
       "Comfortable charcoal fabric sofa from a smoke-free home. Lightly used for two years; pickup near Salcedo Village.",
+    seller: "Liza Mendoza",
   },
   {
     id: 2,
@@ -441,6 +334,7 @@ const seedListings: Listing[] = [
     image: photo("photo-1559348349-86f1f65817fe"),
     description:
       "Medium aluminum frame, 21-speed drivetrain, new brake pads, and recently tuned gears. Ready for daily commuting.",
+    seller: "Paolo Lim",
   },
   {
     id: 3,
@@ -452,6 +346,7 @@ const seedListings: Listing[] = [
     image: photo("photo-1536505847234-1b7adfc33cdd"),
     description:
       "Space Gray, 8GB RAM, 256GB SSD, 91% battery health. Includes original charger and box.",
+    seller: "Carlo Reyes",
   },
   {
     id: 4,
@@ -463,6 +358,7 @@ const seedListings: Listing[] = [
     image: photo("photo-1617806118233-18e1de247200"),
     description:
       "Compact acacia dining set with four chairs. Minor surface marks reflected in price.",
+    seller: "Mara Dela Cruz",
   },
   {
     id: 5,
@@ -783,7 +679,7 @@ const seedListings: Listing[] = [
   {
     id: 29,
     category: "Resumes",
-    price: "Available now",
+    price: "$0",
     title: "Administrative assistant – 4 years exp.",
     location: "Manila",
     time: "2 hours ago",
@@ -794,7 +690,7 @@ const seedListings: Listing[] = [
   {
     id: 30,
     category: "Resumes",
-    price: "Open to work",
+    price: "$0",
     title: "Licensed civil engineer",
     location: "Quezon City",
     time: "Today",
@@ -805,7 +701,7 @@ const seedListings: Listing[] = [
   {
     id: 31,
     category: "Resumes",
-    price: "Freelance",
+    price: "$0",
     title: "Social media manager and copywriter",
     location: "Makati",
     time: "Yesterday",
@@ -816,7 +712,7 @@ const seedListings: Listing[] = [
   {
     id: 32,
     category: "Resumes",
-    price: "Available May",
+    price: "$0",
     title: "Fresh graduate – BS Accountancy",
     location: "Pasig",
     time: "2 days ago",
@@ -1538,8 +1434,13 @@ function App() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const [detailImage, setDetailImage] = useState("")
   const [postImages, setPostImages] = useState<string[]>([])
+  const [postCategory, setPostCategory] = useState<string>(categories[0].title)
   const [uploadError, setUploadError] = useState("")
   const [toast, setToast] = useState("")
+  const [appPromoOpen, setAppPromoOpen] = useState(false)
+  const [appPromoNudge, setAppPromoNudge] = useState(
+    () => localStorage.getItem("craigslist-app-promo-opened") !== "1",
+  )
   const [listings, setListings] = useState(seedListings)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [conversations, setConversations] = useState(sampleConversations)
@@ -1597,6 +1498,13 @@ function App() {
     setSidebarOpen(false)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
+  const dismissAppPromo = () => setAppPromoOpen(false)
+  const openAppPromo = () => {
+    setMenu(null)
+    setAppPromoOpen(true)
+    setAppPromoNudge(false)
+    localStorage.setItem("craigslist-app-promo-opened", "1")
+  }
   const openHelp = () => {
     setActive("Help")
     setQuery("")
@@ -1622,10 +1530,70 @@ function App() {
     setMenu(null)
     showToast(`Showing listings near ${city}`)
   }
+  const openCity = (city: string) => {
+    chooseLocation(city)
+    setActive("Home")
+    setQuery("")
+    setSidebarOpen(false)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
   const openListing = (listing: Listing) => {
     setSelectedListing(listing)
     setDetailImage(listing.image)
     setDialog("details")
+  }
+  const toggleSold = (listing: Listing) => {
+    const sold = !listing.sold
+    setListings((current) =>
+      current.map((item) => (item.id === listing.id ? { ...item, sold } : item)),
+    )
+    setSelectedListing((current) =>
+      current && current.id === listing.id ? { ...current, sold } : current,
+    )
+    showToast(sold ? "Marked as sold" : "Marked as available")
+  }
+  const startSellerChat = (listing: Listing) => {
+    const name = sellerName(listing)
+    const price = `${displayPrice(listing)}${
+      listing.suffix ? ` ${listing.suffix}` : ""
+    }`
+    const existing = conversations.find(
+      (conversation) => conversation.listing === listing.title,
+    )
+    if (existing) {
+      setSelectedConversation(existing.id)
+    } else {
+      const id = Date.now()
+      setConversations((current) => [
+        {
+          id,
+          name,
+          initials: sellerInitials(name),
+          listing: listing.title,
+          price,
+          online: true,
+          messages: [
+            {
+              from: "them",
+              text: `Hi! Thanks for your interest in “${listing.title}”. What would you like to know?`,
+              time: "Just now",
+            },
+          ],
+        },
+        ...current,
+      ])
+      setSelectedConversation(id)
+    }
+    setDialog("messages")
+    showToast(`Messaging ${name} about “${listing.title}”`)
+  }
+  const openListingChat = (listing: Listing) => {
+    if (listing.category === "For Sale") {
+      startSellerChat(listing)
+      return
+    }
+    openMessages()
+    showToast(`Replying about “${listing.title}”`)
   }
   const shareListing = async () => {
     if (!selectedListing) return
@@ -1633,7 +1601,7 @@ function App() {
       if (navigator.share) {
         await navigator.share({
           title: selectedListing.title,
-          text: `${selectedListing.title} — ${selectedListing.price}`,
+          text: `${selectedListing.title} — ${displayPrice(selectedListing)}`,
           url: window.location.href,
         })
       } else {
@@ -1705,16 +1673,18 @@ function App() {
       category,
       title,
       location,
-      price: String(data.get("price")),
+      price: isResumeCategory(category) ? "$0" : String(data.get("price")),
       time: "Just now",
       description: String(data.get("description")),
       image: postImages[0],
       images: postImages,
+      seller: CURRENT_USER,
     }
     setListings((current) => [newListing, ...current])
     setActive(category)
     setCityFilter(null)
     setPostImages([])
+    setPostCategory(categories[0].title)
     setUploadError("")
     setDialog(null)
     showToast("Your listing is now live")
@@ -1847,10 +1817,10 @@ function App() {
                       <span>
                         <strong>{listing.title}</strong>
                         <small>
-                          {listing.category} · {listing.location}
+                          {categoryLabel(listing.category)} · {listing.location}
                         </small>
                       </span>
-                      <b>{listing.price}</b>
+                      <b>{displayPrice(listing)}</b>
                     </button>
                   ))}
                   <button className="search-all" type="submit">
@@ -1900,6 +1870,16 @@ function App() {
         </div>
         <div className="header-actions">
           <button
+            className="app-promo-trigger"
+            onClick={openAppPromo}
+            aria-label="Get the craigslist app"
+          >
+            <Icon name="phone" size={18} />
+            {appPromoNudge && (
+              <span className="app-promo-dot" aria-hidden="true" />
+            )}
+          </button>
+          <button
             onClick={() => {
               setActive("Favorites")
               setQuery("")
@@ -1932,7 +1912,7 @@ function App() {
                 onClick={(event) => event.stopPropagation()}
               >
                 <div>
-                  <strong>Juan dela Cruz</strong>
+                  <strong>{CURRENT_USER}</strong>
                   <small>juan@example.com</small>
                 </div>
                 <button onClick={() => showToast("Profile settings opened")}>
@@ -2045,6 +2025,8 @@ function App() {
           <HelpPage onBack={goHome} onAction={showToast} />
         ) : active === "Events" ? (
           <EventsPage listings={listings} onOpenListing={openListing} />
+        ) : active === "Site Map" ? (
+          <SiteMap cities={cities} onChooseCity={openCity} />
         ) : (
           <>
           {activeCategory ? (
@@ -2059,7 +2041,7 @@ function App() {
               </span>
               <div>
                 <p>Browse category</p>
-                <h1>{activeCategory.title}</h1>
+                <h1>{categoryLabel(activeCategory.title)}</h1>
                 <span>
                   {visibleListings.length} listing
                   {visibleListings.length === 1 ? "" : "s"} available
@@ -2127,7 +2109,7 @@ function App() {
             <div className="listing-grid">
               {displayedListings.map((listing) => (
                 <article
-                  className="listing-card"
+                  className={`listing-card${listing.sold ? " sold" : ""}`}
                   key={listing.id}
                   onClick={() => openListing(listing)}
                   tabIndex={0}
@@ -2137,7 +2119,10 @@ function App() {
                 >
                   <div className="listing-image">
                     <img src={listing.image} alt={listing.title} />
-                    <span className="listing-category">{listing.category}</span>
+                    <span className="listing-category">
+                      {categoryLabel(listing.category)}
+                    </span>
+                    {listing.sold && <span className="sold-badge">SOLD</span>}
                     <button
                       className={
                         favorites.includes(listing.id) ? "favorited" : ""
@@ -2161,9 +2146,15 @@ function App() {
                   </div>
                   <div className="listing-copy">
                     <div className="price">
-                      {listing.price} <span>{listing.suffix}</span>
+                      {displayPrice(listing)} <span>{listing.suffix}</span>
                     </div>
                     <h3>{listing.title}</h3>
+                    {listing.category === "For Sale" && (
+                      <p className="listing-seller">
+                        <span>{sellerInitials(sellerName(listing))}</span>
+                        {sellerName(listing)}
+                      </p>
+                    )}
                     <p>
                       <Icon name="pin" size={12} filled />
                       {listing.location}, Metro Manila
@@ -2374,27 +2365,38 @@ function App() {
                   <div>
                     <label>
                       Category
-                      <select name="category" required>
+                      <select
+                        name="category"
+                        required
+                        value={postCategory}
+                        onChange={(event) => setPostCategory(event.target.value)}
+                      >
                         {categories.map((item) => (
                           <option key={item.title}>{item.title}</option>
                         ))}
                       </select>
                     </label>
-                    <label>
-                      Price or rate
-                      <div className="price-input-wrapper">
-                        <span className="price-currency">₱</span>
-                        <input
-                          type="number"
-                          name="price"
-                          min="0"
-                          step="0.5"
-                          placeholder="0"
-                          required
-                          className="price-number-input"
-                        />
-                      </div>
-                    </label>
+                    {isResumeCategory(postCategory) ? (
+                      <p className="resume-post-note">
+                        Resumes / job wanted posts publish without a price.
+                      </p>
+                    ) : (
+                      <label>
+                        Price or rate
+                        <div className="price-input-wrapper">
+                          <span className="price-currency">₱</span>
+                          <input
+                            type="number"
+                            name="price"
+                            min="0"
+                            step="0.5"
+                            placeholder="0"
+                            required
+                            className="price-number-input"
+                          />
+                        </div>
+                      </label>
+                    )}
                   </div>
                   <label>
                     Location
@@ -2658,9 +2660,33 @@ function App() {
                       <Icon name="tag" size={20} />
                       <span>
                         <strong>Category</strong>
-                        {selectedListing.category}
+                        {categoryLabel(selectedListing.category)}
                       </span>
                     </div>
+                    {selectedListing.category === "For Sale" && (
+                      <>
+                        <div>
+                          <Icon name="user" size={20} />
+                          <span>
+                            <strong>Seller</strong>
+                            {sellerName(selectedListing)}
+                          </span>
+                        </div>
+                        <div>
+                          <Icon name="tag" size={20} />
+                          <span>
+                            <strong>Status</strong>
+                            <span
+                              className={`detail-status${
+                                selectedListing.sold ? " sold" : ""
+                              }`}
+                            >
+                              {selectedListing.sold ? "Sold" : "Available"}
+                            </span>
+                          </span>
+                        </div>
+                      </>
+                    )}
                     <div>
                       <Icon name="pin" size={20} />
                       <span>
@@ -2683,27 +2709,97 @@ function App() {
                       </span>
                     </div>
                   </div>
+                  {isResumeCategory(selectedListing.category) && (
+                    <p className="detail-notice">{RESUME_NOTICE}</p>
+                  )}
                 </div>
                 <div className="detail-actions">
-                  <div className="detail-price">
-                    {selectedListing.price}{" "}
-                    <small>{selectedListing.suffix}</small>
-                  </div>
-                  <div>
+                  {!isResumeCategory(selectedListing.category) && (
+                    <div className="detail-price">
+                      {displayPrice(selectedListing)}{" "}
+                      <small>{selectedListing.suffix}</small>
+                    </div>
+                  )}
+                  <div className="detail-action-buttons">
+                    {selectedListing.category === "For Sale" && (
+                      <button
+                        className="secondary-button"
+                        onClick={() => toggleSold(selectedListing)}
+                      >
+                        {selectedListing.sold
+                          ? "Mark as available"
+                          : "Mark as sold"}
+                      </button>
+                    )}
                     <button
                       className="primary-button"
-                      onClick={() => {
-                        openMessages()
-                        showToast(`Replying about “${selectedListing.title}”`)
-                      }}
+                      onClick={() => openListingChat(selectedListing)}
                     >
                       <Icon name="mail" size={18} />
-                      Chat
+                      {selectedListing.category === "For Sale"
+                        ? `Chat with ${sellerFirstName(
+                            sellerName(selectedListing),
+                          )}`
+                        : "Chat"}
                     </button>
                   </div>
                 </div>
               </>
             )}
+          </section>
+        </div>
+      )}
+      {appPromoOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={dismissAppPromo}
+        >
+          <section
+            className="modal app-promo-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="app-promo-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="modal-close"
+              onClick={dismissAppPromo}
+              aria-label="Close app promotion"
+            >
+              <Icon name="close" size={20} />
+            </button>
+            <h2 id="app-promo-title">Try the official craigslist app</h2>
+            <p>Available for iOS and Android. Buy, sell, and message on the go.</p>
+            <div className="app-promo-badges">
+              <a
+                href="https://apps.apple.com/us/app/craigslist/id1336642410"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img
+                  src={appStoreBadge}
+                  alt="Download on the App Store"
+                  width={120}
+                  height={40}
+                />
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=org.craigslist.CraigslistMobile"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img
+                  src={googlePlayBadge}
+                  alt="Get it on Google Play"
+                  width={134}
+                  height={40}
+                />
+              </a>
+            </div>
+            <button className="app-promo-continue" onClick={dismissAppPromo}>
+              continue to craigslist
+            </button>
           </section>
         </div>
       )}
