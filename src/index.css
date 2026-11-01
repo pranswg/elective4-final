@@ -2221,3 +2221,22 @@ main {
   background: #F8FAFC;
   color: #9AA4B2;
 }
+
+/* Price Input with Currency */
+.price-input-wrapper {
+  position: relative;
+  margin-top: 6px;
+}
+.price-currency {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #5C6B7F;
+  font-size: 14px;
+  pointer-events: none;
+}
+.price-input-wrapper .price-number-input {
+  padding-left: 28px;
+  margin-top: 0;
+}

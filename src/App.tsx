@@ -2236,15 +2236,18 @@ function App() {
                     </label>
                     <label>
                       Price or rate
-                      <input
-                        type="number"
-                        name="price"
-                        min="0"
-                        step="0.5"
-                        placeholder="0"
-                        required
-                        className="price-number-input"
-                      />
+                      <div className="price-input-wrapper">
+                        <span className="price-currency">₱</span>
+                        <input
+                          type="number"
+                          name="price"
+                          min="0"
+                          step="0.5"
+                          placeholder="0"
+                          required
+                          className="price-number-input"
+                        />
+                      </div>
                     </label>
                   </div>
                   <label>
