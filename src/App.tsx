@@ -1,8 +1,16 @@
-import { FormEvent, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useState } from "react"
 import appStoreBadge from "./assets/app-store-badge.svg"
 import googlePlayBadge from "./assets/google-play-badge.png"
-import Icon, { type IconName } from "./components/Icon"
+import Icon, { BrandMark, type IconName } from "./components/Icon"
+import PasswordInput from "./components/PasswordInput"
+import SettingsPage from "./components/SettingsPage"
 import SiteMap from "./components/SiteMap"
+import {
+  defaultPreferences,
+  loadPreferences,
+  savePreferences,
+  type Preferences,
+} from "./preferences"
 
 type HelpArticle = {
   id: string
@@ -16,6 +24,14 @@ type HelpTopic = {
   icon: IconName
   description: string
   articles: HelpArticle[]
+}
+
+type ResumeInfo = {
+  field: string
+  availability: string
+  experience: string
+  skills: string[]
+  summary: string
 }
 
 type Listing = {
@@ -33,7 +49,16 @@ type Listing = {
   venue?: string
   seller?: string
   sold?: boolean
+  resume?: ResumeInfo
 }
+
+type Account = {
+  name: string
+  email: string
+  since?: string
+}
+
+type Provider = "google" | "apple" | "facebook"
 
 type Conversation = {
   id: number
@@ -44,6 +69,15 @@ type Conversation = {
   online?: boolean
   unread?: number
   messages: { from: "me" | "them"; text: string; time: string }[]
+}
+
+type AppNotification = {
+  key: string
+  kind: "message" | "listing"
+  title: string
+  detail: string
+  conversationId?: number
+  listing?: Listing
 }
 
 const nav = [
@@ -121,7 +155,34 @@ const categories = [
 const RESUME_NOTICE =
   "Principals only. Recruiters, please don't contact this poster."
 
+const resumeFields = [
+  "IT",
+  "HR",
+  "Admin",
+  "Finance",
+  "Marketing",
+  "Engineering",
+  "Others",
+]
+
+const resumeAvailabilities = [
+  "Available now",
+  "Open to work",
+]
+
 const CURRENT_USER = "Juan dela Cruz"
+
+const providerAccounts: Record<Provider, Account> = {
+  google: { name: "Juan Dela Cruz", email: "juan.delacruz@gmail.com" },
+  apple: { name: "Juan Dela Cruz", email: "juan.delacruz@icloud.com" },
+  facebook: { name: "Juan Dela Cruz", email: "juan.delacruz@facebook.com" },
+}
+
+const providerLabels: Record<Provider, string> = {
+  google: "Google",
+  apple: "Apple",
+  facebook: "Facebook",
+}
 
 const POSTER_POOL = [
   "Mara Dela Cruz",
@@ -138,6 +199,299 @@ const POSTER_POOL = [
 
 const sellerName = (listing: Listing) =>
   listing.seller ?? POSTER_POOL[listing.id % POSTER_POOL.length]
+
+type SellerReview = {
+  from: string
+  stars: number
+  text: string
+  time: string
+}
+
+type SellerRatingInfo = {
+  rating: number
+  reviews: number
+  since: string
+  breakdown: [number, number, number, number, number]
+  recent: SellerReview[]
+}
+
+const sellerRatings: Record<string, SellerRatingInfo> = {
+  "Mara Dela Cruz": {
+    rating: 4.8,
+    reviews: 32,
+    since: "2019",
+    breakdown: [27, 3, 2, 0, 0],
+    recent: [
+      {
+        from: "Bea Fernandez",
+        stars: 5,
+        text: "Table was in great shape and she helped load it. Smooth meetup.",
+        time: "1 week ago",
+      },
+      {
+        from: "Ryan Aquino",
+        stars: 5,
+        text: "Quick replies and a fair price. Would buy again.",
+        time: "3 weeks ago",
+      },
+    ],
+  },
+  "Carlo Reyes": {
+    rating: 4.5,
+    reviews: 18,
+    since: "2020",
+    breakdown: [11, 5, 2, 0, 0],
+    recent: [
+      {
+        from: "Ana Santos",
+        stars: 5,
+        text: "MacBook was exactly as described, charger included.",
+        time: "4 days ago",
+      },
+      {
+        from: "Nathan Ong",
+        stars: 4,
+        text: "Good deal, though the pickup schedule took some back and forth.",
+        time: "2 weeks ago",
+      },
+    ],
+  },
+  "Paolo Lim": {
+    rating: 4.2,
+    reviews: 9,
+    since: "2021",
+    breakdown: [4, 3, 2, 0, 0],
+    recent: [
+      {
+        from: "Liza Mendoza",
+        stars: 5,
+        text: "Bike was tuned and ready to ride. Honest seller.",
+        time: "1 week ago",
+      },
+      {
+        from: "Miguel Torres",
+        stars: 3,
+        text: "Item was fine but the meetup was late.",
+        time: "1 month ago",
+      },
+    ],
+  },
+  "Liza Mendoza": {
+    rating: 4.9,
+    reviews: 41,
+    since: "2018",
+    breakdown: [38, 2, 1, 0, 0],
+    recent: [
+      {
+        from: "Mara Dela Cruz",
+        stars: 5,
+        text: "Sofa was spotless and delivery was on time.",
+        time: "5 days ago",
+      },
+      {
+        from: "Bea Fernandez",
+        stars: 5,
+        text: "Very easy to talk to. Item matched the photos.",
+        time: "2 weeks ago",
+      },
+    ],
+  },
+  "Ana Santos": {
+    rating: 4.4,
+    reviews: 12,
+    since: "2022",
+    breakdown: [7, 3, 2, 0, 0],
+    recent: [
+      {
+        from: "Carlo Reyes",
+        stars: 5,
+        text: "Great condition and a fair price.",
+        time: "6 days ago",
+      },
+      {
+        from: "Grace Villanueva",
+        stars: 4,
+        text: "Responsive seller, pickup was straightforward.",
+        time: "3 weeks ago",
+      },
+    ],
+  },
+  "Miguel Torres": {
+    rating: 3.7,
+    reviews: 6,
+    since: "2023",
+    breakdown: [2, 2, 1, 1, 0],
+    recent: [
+      {
+        from: "Ana Santos",
+        stars: 4,
+        text: "Item was fine but replies were slow.",
+        time: "2 weeks ago",
+      },
+      {
+        from: "Carlo Reyes",
+        stars: 3,
+        text: "Meetup got moved twice, but the item was as posted.",
+        time: "1 month ago",
+      },
+    ],
+  },
+  "Grace Villanueva": {
+    rating: 4.7,
+    reviews: 23,
+    since: "2020",
+    breakdown: [18, 3, 2, 0, 0],
+    recent: [
+      {
+        from: "Ryan Aquino",
+        stars: 5,
+        text: "Exactly as described. Smooth transaction.",
+        time: "4 days ago",
+      },
+      {
+        from: "Mara Dela Cruz",
+        stars: 4,
+        text: "Good item, packaging could have been better.",
+        time: "3 weeks ago",
+      },
+    ],
+  },
+  "Ryan Aquino": {
+    rating: 4.0,
+    reviews: 5,
+    since: "2023",
+    breakdown: [2, 1, 2, 0, 0],
+    recent: [
+      {
+        from: "Nathan Ong",
+        stars: 5,
+        text: "Honest about the item's condition. No surprises.",
+        time: "1 week ago",
+      },
+      {
+        from: "Paolo Lim",
+        stars: 3,
+        text: "Deal went through but communication was patchy.",
+        time: "1 month ago",
+      },
+    ],
+  },
+  "Bea Fernandez": {
+    rating: 4.6,
+    reviews: 14,
+    since: "2021",
+    breakdown: [10, 3, 1, 0, 0],
+    recent: [
+      {
+        from: "Liza Mendoza",
+        stars: 5,
+        text: "Photos were accurate and she held the item for me.",
+        time: "6 days ago",
+      },
+      {
+        from: "Ana Santos",
+        stars: 4,
+        text: "Nice item, meetup was slightly delayed.",
+        time: "2 weeks ago",
+      },
+    ],
+  },
+  "Nathan Ong": {
+    rating: 4.3,
+    reviews: 8,
+    since: "2022",
+    breakdown: [4, 2, 2, 0, 0],
+    recent: [
+      {
+        from: "Paolo Lim",
+        stars: 5,
+        text: "Quick and easy. Would deal with again.",
+        time: "5 days ago",
+      },
+      {
+        from: "Bea Fernandez",
+        stars: 4,
+        text: "Item matched the listing. Replies took a day.",
+        time: "3 weeks ago",
+      },
+    ],
+  },
+}
+
+function Stars({ value, size }: { value: number; size: number }) {
+  const stars = [0, 1, 2, 3, 4]
+  return (
+    <span className="seller-stars" aria-hidden="true">
+      {stars.map((star) => (
+        <Icon key={star} name="star" size={size} filled />
+      ))}
+      <span
+        className="seller-stars-fill"
+        style={{ width: `${(value / 5) * 100}%` }}
+      >
+        {stars.map((star) => (
+          <Icon key={star} name="star" size={size} filled />
+        ))}
+      </span>
+    </span>
+  )
+}
+
+function SellerRating({
+  seller,
+  size = 9,
+  compact = false,
+}: {
+  seller: string
+  size?: number
+  compact?: boolean
+}) {
+  const stats = sellerRatings[seller]
+  if (!stats) {
+    return (
+      <span className="seller-rating empty">
+        {compact ? "New seller" : "New seller · no reviews yet"}
+      </span>
+    )
+  }
+  const summary = `${stats.rating.toFixed(1)} out of 5 from ${stats.reviews} reviews`
+  return (
+    <span
+      className="seller-rating"
+      title={summary}
+      aria-label={`Rating ${summary}`}
+    >
+      <Stars value={stats.rating} size={size} />
+      <span className="seller-rating-value">{stats.rating.toFixed(1)}</span>
+      {!compact && (
+        <span className="seller-rating-count">· {stats.reviews} reviews</span>
+      )}
+    </span>
+  )
+}
+
+function ProviderButtons({
+  onContinue,
+}: {
+  onContinue: (provider: Provider) => void
+}) {
+  const providers: Provider[] = ["google", "apple", "facebook"]
+  return (
+    <div className="provider-buttons">
+      {providers.map((provider) => (
+        <button
+          key={provider}
+          type="button"
+          className={`provider-button ${provider}`}
+          onClick={() => onContinue(provider)}
+        >
+          <BrandMark name={provider} size={18} />
+          Continue with {providerLabels[provider]}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 const posterRole = (listing: Listing) => {
   if (listing.startDate) return "Host"
@@ -710,6 +1064,14 @@ const seedListings: Listing[] = [
     image: photo("photo-1551836022-d5d88e9218df"),
     description:
       "Detail-oriented administrator skilled in scheduling, purchasing, reports, and Microsoft 365.",
+    resume: {
+      field: "Admin",
+      availability: "Available now",
+      experience: "4 years",
+      skills: ["Scheduling", "Purchasing", "Microsoft 365", "Reporting"],
+      summary:
+        "Detail-oriented administrator with four years supporting busy offices. Handles scheduling, purchasing, reports, and Microsoft 365 with minimal supervision, and can start immediately.",
+    },
   },
   {
     id: 30,
@@ -721,6 +1083,19 @@ const seedListings: Listing[] = [
     image: photo("photo-1503387762-592deb58ef4e"),
     description:
       "Five years in residential construction, estimates, site supervision, and contractor coordination.",
+    resume: {
+      field: "Engineering",
+      availability: "Open to work",
+      experience: "5 years",
+      skills: [
+        "Site supervision",
+        "Estimating",
+        "AutoCAD",
+        "Contractor coordination",
+      ],
+      summary:
+        "Licensed civil engineer with five years across residential construction, estimates, site supervision, and contractor coordination. Looking for full-time or project-based work in Metro Manila.",
+    },
   },
   {
     id: 31,
@@ -732,6 +1107,19 @@ const seedListings: Listing[] = [
     image: photo("photo-1432888622747-4eb9a8efeb07"),
     description:
       "Lifestyle and food specialist offering content calendars, community management, and reporting.",
+    resume: {
+      field: "Marketing",
+      availability: "Open to work",
+      experience: "3 years",
+      skills: [
+        "Content calendars",
+        "Copywriting",
+        "Community management",
+        "Analytics",
+      ],
+      summary:
+        "Social media manager and copywriter for lifestyle and food brands. Builds content calendars, manages communities, and reports on performance. Open to freelance or retainer work.",
+    },
   },
   {
     id: 32,
@@ -743,6 +1131,14 @@ const seedListings: Listing[] = [
     image: photo("photo-1454165804606-c3d57bc86b40"),
     description:
       "Dean's lister with internship experience in audit support, reconciliations, and bookkeeping.",
+    resume: {
+      field: "Finance",
+      availability: "Open to work",
+      experience: "Fresh graduate",
+      skills: ["Auditing", "Reconciliation", "Bookkeeping", "Excel"],
+      summary:
+        "BS Accountancy graduate and dean's lister with internship experience in audit support, reconciliations, and bookkeeping. Available for full-time work.",
+    },
   },
   {
     id: 33,
@@ -787,6 +1183,68 @@ const seedListings: Listing[] = [
     image: photo("photo-1590362891991-f776e747a588"),
     description:
       "Set of four 5x114.3 alloy wheels in good condition. Tires not included; pickup only.",
+  },
+  {
+    id: 37,
+    category: "Resumes",
+    price: "$0",
+    title: "IT support specialist – 3 years exp.",
+    location: "Taguig",
+    time: "Today",
+    image: photo("photo-1519389950473-47ba0277781c"),
+    description:
+      "Desktop and network support for 200+ users. Windows, networking, ticketing, and end-user training.",
+    resume: {
+      field: "IT",
+      availability: "Available now",
+      experience: "3 years",
+      skills: ["Windows", "Networking", "Ticketing", "End-user support"],
+      summary:
+        "IT support specialist with three years supporting 200+ users across Windows desktops, office networks, and ticketing queues. Comfortable with hardware repairs, account setup, and end-user training. Available immediately.",
+    },
+  },
+  {
+    id: 38,
+    category: "Resumes",
+    price: "$0",
+    title: "HR generalist – 6 years exp.",
+    location: "Pasig",
+    time: "Yesterday",
+    image: photo("photo-1573496359142-b8d87734a5a2"),
+    description:
+      "Six years across recruitment, onboarding, payroll, and employee relations for growing teams.",
+    resume: {
+      field: "HR",
+      availability: "Available now",
+      experience: "6 years",
+      skills: ["Recruitment", "Onboarding", "Payroll", "Employee relations"],
+      summary:
+        "HR generalist with six years across recruitment, onboarding, payroll, and employee relations. Has supported teams growing from 30 to 200 people and handled confidential cases with care. Available now.",
+    },
+  },
+  {
+    id: 39,
+    category: "Resumes",
+    price: "$0",
+    title: "Customer service representative – 2 years exp.",
+    location: "Makati",
+    time: "Yesterday",
+    image: photo("photo-1521737604893-d14cc237f11d"),
+    description:
+      "Two years handling phone, email, and chat support for retail accounts with high satisfaction scores.",
+    resume: {
+      field: "Others",
+      availability: "Open to work",
+      experience: "2 years",
+      skills: [
+        "Phone support",
+        "Email support",
+        "CRM tools",
+        "Complaint resolution",
+      ],
+      summary:
+        "Customer service representative with two years handling phone, email, and chat support for retail accounts. Keeps high satisfaction scores and is comfortable with CRM tools and complaint resolution. Open to day or night shifts.",
+    },
   },
 ]
 
@@ -1446,19 +1904,54 @@ function HelpPage({
 }
 
 function App() {
-  const [active, setActive] = useState("Home")
+  const [preferences, setPreferences] = useState<Preferences>(loadPreferences)
+  const [active, setActive] = useState(preferences.defaultHomepage || "Home")
   const [favorites, setFavorites] = useState<number[]>([])
   const [query, setQuery] = useState("")
-  const [selectedCity, setSelectedCity] = useState("Manila")
+  const [selectedCity, setSelectedCity] = useState(preferences.homeLocation)
   const [cityFilter, setCityFilter] = useState<string | null>(null)
   const [showAllCities, setShowAllCities] = useState(false)
-  const [menu, setMenu] = useState<"location" | "profile" | null>(null)
+  const [menu, setMenu] = useState<
+    "location" | "profile" | "notifications" | null
+  >(null)
   const [dialog, setDialog] =
-    useState<"post" | "messages" | "safety" | "details" | null>(null)
+    useState<
+      "post" | "messages" | "safety" | "details" | "login" | "signup" | null
+    >(null)
+  const [account, setAccount] = useState<Account | null>(() => {
+    try {
+      const stored: unknown = JSON.parse(
+        localStorage.getItem("craigslist-account") ?? "null",
+      )
+      if (stored && typeof stored === "object") {
+        const { name, email, since } = stored as {
+          name?: unknown
+          email?: unknown
+          since?: unknown
+        }
+        if (typeof name === "string" && typeof email === "string") {
+          return {
+            name,
+            email,
+            since: typeof since === "string" ? since : undefined,
+          }
+        }
+      }
+    } catch {
+      return null
+    }
+    return null
+  })
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const [detailImage, setDetailImage] = useState("")
   const [postImages, setPostImages] = useState<string[]>([])
   const [postCategory, setPostCategory] = useState<string>(categories[0].title)
+  const [resumeField, setResumeField] = useState("All fields")
+  const [resumeAvailability, setResumeAvailability] = useState("Any availability")
+  const [showResume, setShowResume] = useState(false)
+  const [minRating, setMinRating] = useState(false)
+  const [sellerProfile, setSellerProfile] = useState<string | null>(null)
+  const [signupError, setSignupError] = useState("")
   const [uploadError, setUploadError] = useState("")
   const [toast, setToast] = useState("")
   const [appPromoOpen, setAppPromoOpen] = useState(false)
@@ -1471,6 +1964,18 @@ function App() {
   const [selectedConversation, setSelectedConversation] =
     useState<number | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [readNotifications, setReadNotifications] = useState<string[]>(() => {
+    try {
+      const stored: unknown = JSON.parse(
+        localStorage.getItem("craigslist-notifications-read") ?? "[]",
+      )
+      return Array.isArray(stored)
+        ? stored.filter((key): key is string => typeof key === "string")
+        : []
+    } catch {
+      return []
+    }
+  })
 
   const searchSuggestions = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -1495,14 +2000,43 @@ function App() {
       const favoriteMatch =
         active !== "Favorites" || favorites.includes(listing.id)
       const cityMatch = !cityFilter || listing.location.includes(cityFilter)
+      const resumeMatch =
+        active !== "Resumes" ||
+        ((resumeField === "All fields" ||
+          listing.resume?.field === resumeField) &&
+          (resumeAvailability === "Any availability" ||
+            listing.resume?.availability === resumeAvailability))
+      const ratingMatch =
+        !minRating ||
+        (!isResumeCategory(listing.category) &&
+          (sellerRatings[sellerName(listing)]?.rating ?? 0) >= 4)
+      const soldMatch = !preferences.hideSold || !listing.sold
       const searchMatch =
         !normalized ||
         `${listing.title} ${listing.category} ${listing.location} ${listing.price} ${listing.description}`
           .toLowerCase()
           .includes(normalized)
-      return categoryMatch && favoriteMatch && cityMatch && searchMatch
+      return (
+        categoryMatch &&
+        favoriteMatch &&
+        cityMatch &&
+        resumeMatch &&
+        ratingMatch &&
+        soldMatch &&
+        searchMatch
+      )
     })
-  }, [active, cityFilter, favorites, listings, query])
+  }, [
+    active,
+    cityFilter,
+    favorites,
+    listings,
+    minRating,
+    preferences.hideSold,
+    query,
+    resumeAvailability,
+    resumeField,
+  ])
 
   const displayedListings =
     active === "Home" && !query && !cityFilter
@@ -1510,15 +2044,73 @@ function App() {
           .map((id) => visibleListings.find((listing) => listing.id === id))
           .filter((listing): listing is Listing => Boolean(listing))
       : visibleListings
+  const sellerProfileStats = sellerProfile
+    ? sellerRatings[sellerProfile]
+    : undefined
+  const sellerProfileListings = sellerProfile
+    ? listings.filter(
+        (listing) =>
+          !isResumeCategory(listing.category) &&
+          sellerName(listing) === sellerProfile,
+      )
+    : []
+  const notifications = useMemo<AppNotification[]>(() => {
+    const messages: AppNotification[] = conversations
+      .filter((conversation) => conversation.unread)
+      .map((conversation) => ({
+        key: `message-${conversation.id}`,
+        kind: "message",
+        title: `${conversation.name} sent you a message`,
+        detail:
+          conversation.messages[conversation.messages.length - 1]?.text ??
+          conversation.listing,
+        conversationId: conversation.id,
+      }))
+    const cityListings = cityFilter
+      ? listings.filter((listing) => listing.location === cityFilter)
+      : listings
+    const recentListings: AppNotification[] = cityListings
+      .slice(0, 2)
+      .map((listing) => ({
+        key: `listing-${listing.id}`,
+        kind: "listing",
+        title: `New listing in ${listing.location}`,
+        detail: `${listing.title} · ${displayPrice(listing)}`,
+        listing,
+      }))
+    return [...messages, ...recentListings]
+  }, [cityFilter, conversations, listings])
+  const unreadNotificationCount = notifications.filter(
+    (notification) => !readNotifications.includes(notification.key),
+  ).length
   const activeCategory = categories.find((category) => category.title === active)
   const showToast = (message: string) => {
     setToast(message)
     window.setTimeout(() => setToast(""), 2600)
   }
+  const updatePreferences = (patch: Partial<Preferences>) => {
+    setPreferences((current) => {
+      const next = { ...current, ...patch }
+      savePreferences(next)
+      return next
+    })
+  }
+  const openSettings = () => {
+    if (!account) {
+      openLogin()
+      return
+    }
+    setMenu(null)
+    setSidebarOpen(false)
+    setQuery("")
+    setActive("Settings")
+    window.scrollTo({ top: 0 })
+  }
   const goHome = () => {
     setActive("Home")
     setQuery("")
     setCityFilter(null)
+    setMinRating(false)
     setSidebarOpen(false)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -1539,6 +2131,9 @@ function App() {
   const selectCategory = (name: string) => {
     setActive(name)
     setQuery("")
+    setResumeField("All fields")
+    setResumeAvailability("Any availability")
+    setMinRating(false)
     setSidebarOpen(false)
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -1564,7 +2159,42 @@ function App() {
   const openListing = (listing: Listing) => {
     setSelectedListing(listing)
     setDetailImage(listing.image)
+    setShowResume(false)
     setDialog("details")
+  }
+  const openSellerProfile = (seller: string) => {
+    setMenu(null)
+    setDialog(null)
+    setSellerProfile(seller)
+  }
+  useEffect(() => {
+    if (showResume) {
+      document
+        .querySelector(".resume-panel")
+        ?.scrollIntoView({ block: "center" })
+    }
+  }, [showResume])
+  const markNotificationsRead = (keys: string[]) => {
+    setReadNotifications((current) => {
+      const next = Array.from(new Set([...current, ...keys]))
+      localStorage.setItem("craigslist-notifications-read", JSON.stringify(next))
+      return next
+    })
+  }
+  const markAllNotificationsRead = () =>
+    markNotificationsRead(notifications.map((notification) => notification.key))
+  const openNotification = (notification: AppNotification) => {
+    markNotificationsRead([notification.key])
+    setMenu(null)
+    if (
+      notification.kind === "message" &&
+      notification.conversationId !== undefined
+    ) {
+      setSelectedConversation(notification.conversationId)
+      setDialog("messages")
+    } else if (notification.listing) {
+      openListing(notification.listing)
+    }
   }
   const toggleSold = (listing: Listing) => {
     const sold = !listing.sold
@@ -1682,6 +2312,156 @@ function App() {
     }
   }
 
+  const signOut = () => {
+    setAccount(null)
+    localStorage.removeItem("craigslist-account")
+    setMenu(null)
+    if (active === "Settings") setActive("Home")
+    showToast("You have been signed out")
+  }
+
+  const saveAccountProfile = (
+    profile: { name: string; email: string },
+    username: string,
+  ) => {
+    if (!account) return
+    const next = { ...account, ...profile }
+    setAccount(next)
+    if (localStorage.getItem("craigslist-account")) {
+      localStorage.setItem("craigslist-account", JSON.stringify(next))
+    }
+    updatePreferences({ username })
+  }
+
+  const downloadAccountData = () => {
+    const payload = {
+      account,
+      preferences,
+      favorites: favorites.map((id) => {
+        const listing = listings.find((item) => item.id === id)
+        return listing ? { id, title: listing.title } : { id }
+      }),
+      exportedAt: new Date().toISOString(),
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "craigslist-account-data.json"
+    link.click()
+    URL.revokeObjectURL(url)
+    showToast("Account data downloaded")
+  }
+
+  const deactivateAccount = () => {
+    setAccount(null)
+    localStorage.removeItem("craigslist-account")
+    setMenu(null)
+    setActive("Home")
+    showToast("Account deactivated — sign in again to reactivate")
+  }
+
+  const deleteAccountData = () => {
+    localStorage.removeItem("craigslist-account")
+    localStorage.removeItem("craigslist-settings")
+    localStorage.removeItem("craigslist-notifications-read")
+    setAccount(null)
+    setPreferences(defaultPreferences)
+    setFavorites([])
+    setReadNotifications([])
+    setSelectedCity(defaultPreferences.homeLocation)
+    setCityFilter(null)
+    setMenu(null)
+    setActive("Home")
+    window.scrollTo({ top: 0 })
+    showToast("Account data deleted from this browser")
+  }
+
+  const openLogin = () => {
+    setMenu(null)
+    setSignupError("")
+    setDialog("login")
+  }
+
+  const openSignup = () => {
+    setMenu(null)
+    setSignupError("")
+    setDialog("signup")
+  }
+
+  const continueWithProvider = (provider: Provider) => {
+    const next: Account = {
+      ...providerAccounts[provider],
+      since: new Date().toISOString(),
+    }
+    setAccount(next)
+    localStorage.setItem("craigslist-account", JSON.stringify(next))
+    setSignupError("")
+    setDialog(null)
+    setMenu(null)
+    showToast(`Signed in with ${providerLabels[provider]}`)
+  }
+
+  const submitLogin = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data = new FormData(event.currentTarget)
+    const email = String(data.get("email")).trim()
+    const password = String(data.get("password"))
+    if (password.length < 6) {
+      showToast("Password must be at least 6 characters")
+      return
+    }
+    const name =
+      email
+        .split("@")[0]
+        .split(/[._-]+/)
+        .filter(Boolean)
+        .map((part) => part[0].toUpperCase() + part.slice(1))
+        .join(" ") || CURRENT_USER
+    const next: Account = { name, email, since: new Date().toISOString() }
+    setAccount(next)
+    if (data.get("remember") !== null) {
+      localStorage.setItem("craigslist-account", JSON.stringify(next))
+    } else {
+      localStorage.removeItem("craigslist-account")
+    }
+    setDialog(null)
+    setMenu(null)
+    showToast(`Signed in as ${name}`)
+  }
+
+  const submitSignup = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data = new FormData(event.currentTarget)
+    const firstName = String(data.get("firstName")).trim()
+    const lastName = String(data.get("lastName")).trim()
+    const email = String(data.get("email")).trim()
+    const password = String(data.get("password"))
+    const confirmPassword = String(data.get("confirmPassword"))
+    if (!firstName || !lastName) {
+      setSignupError("Enter your first and last name.")
+      return
+    }
+    if (password.length < 6) {
+      setSignupError("Password must be at least 6 characters.")
+      return
+    }
+    if (password !== confirmPassword) {
+      setSignupError("Passwords do not match.")
+      return
+    }
+    const name = `${firstName} ${lastName}`
+    const next: Account = { name, email, since: new Date().toISOString() }
+    setAccount(next)
+    localStorage.setItem("craigslist-account", JSON.stringify(next))
+    setSignupError("")
+    setDialog(null)
+    setMenu(null)
+    showToast(`Welcome, ${name}`)
+  }
+
   const submitAd = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!postImages.length) {
@@ -1692,6 +2472,7 @@ function App() {
     const category = String(data.get("category"))
     const title = String(data.get("title"))
     const location = String(data.get("location"))
+    const description = String(data.get("description"))
     const newListing: Listing = {
       id: Date.now(),
       category,
@@ -1699,14 +2480,25 @@ function App() {
       location,
       price: isResumeCategory(category) ? "$0" : String(data.get("price")),
       time: "Just now",
-      description: String(data.get("description")),
+      description,
       image: postImages[0],
       images: postImages,
-      seller: CURRENT_USER,
+      seller: account?.name ?? CURRENT_USER,
+      resume: isResumeCategory(category)
+        ? {
+            field: String(data.get("resumeField")),
+            availability: String(data.get("resumeAvailability")),
+            experience: "Not specified",
+            skills: [],
+            summary: description,
+          }
+        : undefined,
     }
     setListings((current) => [newListing, ...current])
     setActive(category)
     setCityFilter(null)
+    setResumeField("All fields")
+    setResumeAvailability("Any availability")
     setPostImages([])
     setPostCategory(categories[0].title)
     setUploadError("")
@@ -1725,6 +2517,9 @@ function App() {
     if (!normalized) return
     setQuery(normalized)
     setActive("Home")
+    if (!cityFilter && preferences.searchLocation !== "Anywhere") {
+      setCityFilter(preferences.searchLocation)
+    }
     setSearchOpen(false)
     document
       .querySelector(".listing-section")
@@ -1760,7 +2555,9 @@ function App() {
 
   return (
     <div
-      className={`app-shell ${active === "Help" ? "help-shell" : ""}`}
+      className={`app-shell ${
+        active === "Help" || active === "Settings" ? "help-shell" : ""
+      }`}
       onClick={() => menu && setMenu(null)}
     >
       <header className="topbar">
@@ -1918,6 +2715,70 @@ function App() {
             <Icon name="mail" size={22} />
             <span>Messages</span>
           </button>
+          <div className="menu-wrap">
+            <button
+              className="notification-bell"
+              aria-label={`Notifications${
+                unreadNotificationCount
+                  ? ` (${unreadNotificationCount} unread)`
+                  : ""
+              }`}
+              aria-expanded={menu === "notifications"}
+              onClick={(event) => {
+                event.stopPropagation()
+                setMenu(menu === "notifications" ? null : "notifications")
+              }}
+            >
+              <Icon name="bell" size={21} />
+              {unreadNotificationCount > 0 && (
+                <span className="notification-count">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </button>
+            {menu === "notifications" && (
+              <div
+                className="dropdown notifications-menu"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="notifications-head">
+                  <strong>Notifications</strong>
+                  {unreadNotificationCount > 0 && (
+                    <button onClick={markAllNotificationsRead}>
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="notifications-list">
+                  {notifications.map((notification) => (
+                    <button
+                      className={`notification-item${
+                        readNotifications.includes(notification.key)
+                          ? " read"
+                          : ""
+                      }`}
+                      key={notification.key}
+                      onClick={() => openNotification(notification)}
+                    >
+                      <span className="notification-icon">
+                        <Icon
+                          name={
+                            notification.kind === "message" ? "mail" : "tag"
+                          }
+                          size={15}
+                        />
+                      </span>
+                      <span>
+                        <strong>{notification.title}</strong>
+                        <small>{notification.detail}</small>
+                      </span>
+                      {!readNotifications.includes(notification.key) && <i />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="menu-wrap profile-wrap">
             <button
               className="profile"
@@ -1935,18 +2796,30 @@ function App() {
                 className="dropdown profile-menu"
                 onClick={(event) => event.stopPropagation()}
               >
-                <div>
-                  <strong>{CURRENT_USER}</strong>
-                  <small>juan@example.com</small>
-                </div>
-                <button onClick={() => showToast("Profile settings opened")}>
-                  Account settings
-                </button>
-                <button onClick={() => setDialog("post")}>My listings</button>
-                <button onClick={openHelp}>Help center</button>
-                <button onClick={() => showToast("You have been signed out")}>
-                  Sign out
-                </button>
+                {account ? (
+                  <>
+                    <div>
+                      <strong>{account.name}</strong>
+                      <small>{account.email}</small>
+                    </div>
+                    <button onClick={openSettings}>Account settings</button>
+                    <button onClick={() => setDialog("post")}>
+                      My listings
+                    </button>
+                    <button onClick={openHelp}>Help center</button>
+                    <button onClick={signOut}>Sign out</button>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <strong>Guest</strong>
+                      <small>Sign in to manage your posts</small>
+                    </div>
+                    <button onClick={openLogin}>Log in</button>
+                    <button onClick={openSignup}>Sign up</button>
+                    <button onClick={openHelp}>Help center</button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -2045,7 +2918,30 @@ function App() {
       </aside>
 
       <main className={activeCategory ? "category-page" : ""}>
-        {active === "Help" ? (
+        {active === "Settings" && account ? (
+          <SettingsPage
+            account={account}
+            preferences={preferences}
+            cities={cities}
+            homepages={["Home", ...categories.map((category) => category.title)]}
+            favoritesCount={favorites.length}
+            onBack={goHome}
+            onSaveProfile={saveAccountProfile}
+            onUpdatePreferences={updatePreferences}
+            onChooseCity={setSelectedCity}
+            onOpenFavorites={() => {
+              setActive("Favorites")
+              setQuery("")
+              window.scrollTo({ top: 0 })
+            }}
+            onOpenHelp={openHelp}
+            onSignOut={signOut}
+            onDeactivate={deactivateAccount}
+            onDeleteData={deleteAccountData}
+            onDownloadData={downloadAccountData}
+            onToast={showToast}
+          />
+        ) : active === "Help" ? (
           <HelpPage onBack={goHome} onAction={showToast} />
         ) : active === "Events" ? (
           <EventsPage listings={listings} onOpenListing={openListing} />
@@ -2116,19 +3012,63 @@ function App() {
                 </small>
               )}
             </div>
-            {active === "Home" && !query && !cityFilter && (
-              <button
-                onClick={() => {
-                  setActive("All")
-                  document
-                    .querySelector(".listing-section")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }}
-              >
-                View all <Icon name="arrow" size={16} />
-              </button>
-            )}
+            <div className="section-actions">
+              {active !== "Home" && active !== "Resumes" && (
+                <button
+                  className={`rating-filter-toggle${minRating ? " active" : ""}`}
+                  onClick={() => setMinRating((current) => !current)}
+                  aria-pressed={minRating}
+                >
+                  <Icon name="star" size={12} filled />
+                  4★ &amp; up
+                </button>
+              )}
+              {active === "Home" && !query && !cityFilter && (
+                <button
+                  onClick={() => {
+                    setActive("All")
+                    document
+                      .querySelector(".listing-section")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }}
+                >
+                  View all <Icon name="arrow" size={16} />
+                </button>
+              )}
+            </div>
           </div>
+          {active === "Resumes" && (
+            <div className="resume-filters">
+              <div className="resume-filter-row">
+                <span>Field</span>
+                {["All fields", ...resumeFields].map((field) => (
+                  <button
+                    key={field}
+                    className={resumeField === field ? "active" : ""}
+                    onClick={() => setResumeField(field)}
+                  >
+                    {field}
+                  </button>
+                ))}
+              </div>
+              <div className="resume-filter-row">
+                <span>Availability</span>
+                {["Any availability", ...resumeAvailabilities].map(
+                  (availability) => (
+                    <button
+                      key={availability}
+                      className={
+                        resumeAvailability === availability ? "active" : ""
+                      }
+                      onClick={() => setResumeAvailability(availability)}
+                    >
+                      {availability}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
           {displayedListings.length ? (
             <div className="listing-grid">
               {displayedListings.map((listing) => (
@@ -2173,16 +3113,34 @@ function App() {
                       {displayPrice(listing)} <span>{listing.suffix}</span>
                     </div>
                     <h3>{listing.title}</h3>
-                    {!isResumeCategory(listing.category) && (
-                      <p className="listing-seller">
-                        <span>{sellerInitials(sellerName(listing))}</span>
-                        {sellerName(listing)}
-                      </p>
-                    )}
                     <p>
                       <Icon name="pin" size={12} filled />
                       {listing.location}, Metro Manila
                     </p>
+                    {!isResumeCategory(listing.category) && (
+                      <button
+                        type="button"
+                        className="listing-seller"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          openSellerProfile(sellerName(listing))
+                        }}
+                        onKeyDown={(event) => event.stopPropagation()}
+                        aria-label={`View ${sellerName(listing)}'s profile`}
+                      >
+                        <span className="seller-avatar">
+                          {sellerInitials(sellerName(listing))}
+                        </span>
+                        <span className="seller-meta">
+                          <span className="seller-name">
+                            {sellerName(listing)}
+                          </span>
+                          {preferences.showRatings && (
+                            <SellerRating seller={sellerName(listing)} compact />
+                          )}
+                        </span>
+                      </button>
+                    )}
                     <time>{listing.time}</time>
                   </div>
                 </article>
@@ -2198,6 +3156,23 @@ function App() {
               </span>
               <h3>No listings found</h3>
               <p>Try another category, location, or search term.</p>
+              {minRating && (
+                <button onClick={() => setMinRating(false)}>
+                  Clear rating filter
+                </button>
+              )}
+              {active === "Resumes" &&
+                (resumeField !== "All fields" ||
+                  resumeAvailability !== "Any availability") && (
+                  <button
+                    onClick={() => {
+                      setResumeField("All fields")
+                      setResumeAvailability("Any availability")
+                    }}
+                  >
+                    Clear resume filters
+                  </button>
+                )}
               <button onClick={goHome}>Browse all listings</button>
             </div>
           )}
@@ -2294,8 +3269,8 @@ function App() {
             className={`modal ${dialog === "details" ? "details-modal" : ""} ${
               dialog === "messages" ? "messages-modal" : ""
             } ${dialog === "post" ? "post-modal" : ""} ${
-              currentConversation ? "conversation-modal" : ""
-            }`}
+              dialog === "login" || dialog === "signup" ? "login-modal" : ""
+            } ${currentConversation ? "conversation-modal" : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -2308,6 +3283,166 @@ function App() {
             >
               <Icon name="close" size={20} />
             </button>
+            {dialog === "login" && (
+              <>
+                <div className="modal-heading">
+                  <span>
+                    <Icon name="user" />
+                  </span>
+                  <div>
+                    <h2 id="modal-title">Log in</h2>
+                    <p>Sign in to manage your ads and messages.</p>
+                  </div>
+                </div>
+                <form className="login-form" onSubmit={submitLogin}>
+                  <ProviderButtons onContinue={continueWithProvider} />
+                  <div className="login-divider">
+                    <span>or use your email</span>
+                  </div>
+                  <label>
+                    Email
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <label>
+                    Password
+                    <PasswordInput
+                      name="password"
+                      required
+                      minLength={6}
+                      autoComplete="current-password"
+                      placeholder="At least 6 characters"
+                    />
+                  </label>
+                  <div className="login-options">
+                    <label className="login-remember">
+                      <input type="checkbox" name="remember" defaultChecked />
+                      Remember me
+                    </label>
+                    <button
+                      type="button"
+                      className="login-link"
+                      onClick={() =>
+                        showToast("Password reset link sent to your email")
+                      }
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <button className="primary-button login-submit" type="submit">
+                    Log in
+                  </button>
+                  <p className="login-note">
+                    Demo only — any valid email and a 6+ character password
+                    works.
+                  </p>
+                  <p className="login-switch">
+                    New to craigslist?{" "}
+                    <button
+                      type="button"
+                      className="login-link"
+                      onClick={openSignup}
+                    >
+                      Sign up
+                    </button>
+                  </p>
+                </form>
+              </>
+            )}
+            {dialog === "signup" && (
+              <>
+                <div className="modal-heading">
+                  <span>
+                    <Icon name="user" />
+                  </span>
+                  <div>
+                    <h2 id="modal-title">Sign up</h2>
+                    <p>Create an account to post and message.</p>
+                  </div>
+                </div>
+                <form className="login-form" onSubmit={submitSignup}>
+                  <ProviderButtons onContinue={continueWithProvider} />
+                  <div className="login-divider">
+                    <span>or sign up with email</span>
+                  </div>
+                  <div className="signup-name-row">
+                    <label>
+                      First name
+                      <input
+                        name="firstName"
+                        type="text"
+                        required
+                        autoComplete="given-name"
+                        placeholder="Juan"
+                      />
+                    </label>
+                    <label>
+                      Last name
+                      <input
+                        name="lastName"
+                        type="text"
+                        required
+                        autoComplete="family-name"
+                        placeholder="dela Cruz"
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    Email
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <label>
+                    Password
+                    <PasswordInput
+                      name="password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      placeholder="At least 6 characters"
+                    />
+                  </label>
+                  <label>
+                    Confirm password
+                    <PasswordInput
+                      name="confirmPassword"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      placeholder="Re-enter your password"
+                    />
+                  </label>
+                  {signupError && (
+                    <p className="form-error" role="alert">
+                      {signupError}
+                    </p>
+                  )}
+                  <button className="primary-button login-submit" type="submit">
+                    Create account
+                  </button>
+                  <p className="login-switch">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      className="login-link"
+                      onClick={openLogin}
+                    >
+                      Log in
+                    </button>
+                  </p>
+                </form>
+              </>
+            )}
             {dialog === "post" && (
               <>
                 <div className="modal-heading">
@@ -2422,6 +3557,29 @@ function App() {
                       </label>
                     )}
                   </div>
+                  {isResumeCategory(postCategory) && (
+                    <div>
+                      <label>
+                        Field
+                        <select name="resumeField" defaultValue={resumeFields[0]}>
+                          {resumeFields.map((field) => (
+                            <option key={field}>{field}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Availability
+                        <select
+                          name="resumeAvailability"
+                          defaultValue={resumeAvailabilities[0]}
+                        >
+                          {resumeAvailabilities.map((availability) => (
+                            <option key={availability}>{availability}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  )}
                   <label>
                     Location
                     <select name="location" defaultValue={selectedCity} className="location-select-limited">
@@ -2693,6 +3851,18 @@ function App() {
                         <span>
                           <strong>{posterRole(selectedListing)}</strong>
                           {sellerName(selectedListing)}
+                          <SellerRating
+                            seller={sellerName(selectedListing)}
+                            size={13}
+                          />
+                          <button
+                            className="seller-profile-link"
+                            onClick={() =>
+                              openSellerProfile(sellerName(selectedListing))
+                            }
+                          >
+                            View profile
+                          </button>
                         </span>
                       </div>
                     )}
@@ -2725,14 +3895,63 @@ function App() {
                         {selectedListing.time}
                       </span>
                     </div>
-                    <div className="detail-about">
+                    <div
+                      className={`detail-about${
+                        isResumeCategory(selectedListing.category) ? " preview" : ""
+                      }`}
+                    >
                       <Icon name="message" size={20} />
                       <span>
                         <strong>About this listing</strong>
-                        {selectedListing.description}
+                        <span className="detail-about-text">
+                          {selectedListing.description}
+                        </span>
                       </span>
                     </div>
                   </div>
+                  {isResumeCategory(selectedListing.category) &&
+                    selectedListing.resume &&
+                    showResume && (
+                      <div className="resume-panel">
+                        <div className="resume-panel-head">
+                          <span>
+                            <strong>Applicant resume</strong>
+                            <small>
+                              {selectedListing.location} ·{" "}
+                              {selectedListing.resume.availability} ·{" "}
+                              {selectedListing.resume.experience}
+                            </small>
+                          </span>
+                          <button onClick={() => setShowResume(false)}>
+                            Hide
+                          </button>
+                        </div>
+                        <div className="resume-meta">
+                          <span>
+                            <strong>Field</strong>
+                            {selectedListing.resume.field}
+                          </span>
+                          <span>
+                            <strong>Availability</strong>
+                            {selectedListing.resume.availability}
+                          </span>
+                          <span>
+                            <strong>Experience</strong>
+                            {selectedListing.resume.experience}
+                          </span>
+                        </div>
+                        {selectedListing.resume.skills.length > 0 && (
+                          <div className="resume-skills">
+                            {selectedListing.resume.skills.map((skill) => (
+                              <span key={skill}>{skill}</span>
+                            ))}
+                          </div>
+                        )}
+                        <p className="resume-summary">
+                          {selectedListing.resume.summary}
+                        </p>
+                      </div>
+                    )}
                   {isResumeCategory(selectedListing.category) && (
                     <p className="detail-notice">{RESUME_NOTICE}</p>
                   )}
@@ -2745,6 +3964,17 @@ function App() {
                     </div>
                   )}
                   <div className="detail-action-buttons">
+                    {isResumeCategory(selectedListing.category) &&
+                      selectedListing.resume && (
+                        <button
+                          className="secondary-button"
+                          onClick={() => setShowResume((current) => !current)}
+                          aria-expanded={showResume}
+                        >
+                          <Icon name="file" size={16} />
+                          {showResume ? "Hide resume" : "View resume"}
+                        </button>
+                      )}
                     {selectedListing.category === "For Sale" && (
                       <button
                         className="secondary-button"
@@ -2769,6 +3999,109 @@ function App() {
                   </div>
                 </div>
               </>
+            )}
+          </section>
+        </div>
+      )}
+      {sellerProfile && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setSellerProfile(null)}
+        >
+          <section
+            className="modal seller-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="seller-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="modal-close"
+              onClick={() => setSellerProfile(null)}
+              aria-label="Close seller profile"
+            >
+              <Icon name="close" size={18} />
+            </button>
+            <div className="seller-profile-head">
+              <span className="seller-profile-avatar">
+                {sellerInitials(sellerProfile)}
+              </span>
+              <div>
+                <h2 id="seller-modal-title">{sellerProfile}</h2>
+                <p>
+                  {sellerProfileStats
+                    ? `Member since ${sellerProfileStats.since}`
+                    : "New seller"}
+                </p>
+                <SellerRating seller={sellerProfile} size={14} />
+              </div>
+            </div>
+            {sellerProfileStats ? (
+              <>
+                <div className="seller-breakdown">
+                  {sellerProfileStats.breakdown.map((count, index) => {
+                    const stars = 5 - index
+                    return (
+                      <div className="seller-breakdown-row" key={stars}>
+                        <span>{stars}★</span>
+                        <span className="seller-breakdown-bar">
+                          <span
+                            style={{
+                              width: `${(count / sellerProfileStats.reviews) * 100}%`,
+                            }}
+                          />
+                        </span>
+                        <small>{count}</small>
+                      </div>
+                    )
+                  })}
+                </div>
+                <h3 className="seller-modal-heading">Recent reviews</h3>
+                <div className="seller-reviews">
+                  {sellerProfileStats.recent.map((review) => (
+                    <article key={review.text}>
+                      <div className="seller-review-meta">
+                        <Stars value={review.stars} size={11} />
+                        <span>{review.from}</span>
+                        <small>{review.time}</small>
+                      </div>
+                      <p>{review.text}</p>
+                    </article>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="seller-empty-note">
+                This seller hasn't been rated yet. Ratings come from completed
+                transactions and community reviews.
+              </p>
+            )}
+            <h3 className="seller-modal-heading">
+              Other listings
+              {sellerProfileListings.length > 0 &&
+                ` (${sellerProfileListings.length})`}
+            </h3>
+            {sellerProfileListings.length ? (
+              <div className="seller-listings">
+                {sellerProfileListings.map((listing) => (
+                  <button
+                    key={listing.id}
+                    onClick={() => {
+                      setSellerProfile(null)
+                      openListing(listing)
+                    }}
+                  >
+                    <span>{listing.title}</span>
+                    <small>
+                      {displayPrice(listing)} · {listing.location}
+                      {listing.sold ? " · Sold" : ""}
+                    </small>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="seller-empty-note">No other listings right now.</p>
             )}
           </section>
         </div>
