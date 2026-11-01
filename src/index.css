@@ -2246,3 +2246,11 @@ main {
   height: 150px;
   overflow-y: auto;
 }
+
+/* Scrollable dropdown on expand */
+.post-form select.location-select-scroll {
+  max-height: 150px;
+}
+.post-form select.location-select-scroll option {
+  padding: 6px 8px;
+}
