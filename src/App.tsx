@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react"
 
-type IconName = "home" | "tag" | "house" | "briefcase" | "tool" | "users" | "message" | "bolt" | "file" | "car" | "search" | "pin" | "heart" | "mail" | "user" | "plus" | "shield" | "chevron" | "arrow" | "close" | "check" | "menu" | "share"
+type IconName = "home" | "tag" | "house" | "briefcase" | "tool" | "users" | "message" | "bolt" | "file" | "car" | "search" | "pin" | "heart" | "mail" | "user" | "plus" | "shield" | "chevron" | "arrow" | "close" | "check" | "menu" | "share" | "calendar"
 
 type HelpArticle = {
   id: string
@@ -27,6 +27,8 @@ type Listing = {
   image: string
   images?: string[]
   description: string
+  startDate?: string
+  venue?: string
 }
 
 type Conversation = {
@@ -142,6 +144,14 @@ const iconPaths: Record<IconName, React.ReactNode> = {
       <path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5" />
     </>
   ),
+  calendar: (
+    <>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </>
+  ),
 }
 
 function Icon({
@@ -172,6 +182,7 @@ function Icon({
 
 const nav = [
   ["Home", "home"],
+  ["Events", "calendar"],
   ["For Sale", "tag"],
   ["Housing", "house"],
   ["Jobs", "briefcase"],
@@ -633,10 +644,51 @@ const seedListings: Listing[] = [
     price: "Volunteers",
     title: "Pasig River cleanup drive",
     location: "Pasig",
-    time: "2 days ago",
+    time: "7:00 AM - 11:00 AM",
     image: photo("photo-1596367437430-ba4c9a7456ac"),
     description:
       "Join a local cleanup team on Sunday morning. Gloves, sacks, water, and orientation provided.",
+    startDate: "2026-11-02",
+    venue: "Pasig River Esplanade",
+  },
+  {
+    id: 101,
+    category: "Community",
+    price: "Free",
+    title: "Saturday morning run club at BGC",
+    location: "Taguig",
+    time: "6:00 AM",
+    image: photo("photo-1552674605-db6ffd4facb5"),
+    description:
+      "Friendly 5K social run for all paces. Meet at Track 30th at 6:00 AM; coffee after.",
+    startDate: "2026-11-01",
+    venue: "Track 30th, BGC",
+  },
+  {
+    id: 102,
+    category: "Community",
+    price: "₱250",
+    title: "Beginner pottery meetup",
+    location: "Quezon City",
+    time: "2:00 PM - 5:00 PM",
+    image: photo("photo-1610701596007-11502861dcfa"),
+    description:
+      "A relaxed introduction to hand-building clay. Materials and firing included; twelve slots only.",
+    startDate: "2026-11-03",
+    venue: "Clay Studio QC",
+  },
+  {
+    id: 103,
+    category: "Community",
+    price: "Free",
+    title: "Weekend book swap and coffee",
+    location: "Makati",
+    time: "10:00 AM - 1:00 PM",
+    image: photo("photo-1526243741027-444d633d7365"),
+    description:
+      "Bring up to five books and meet fellow readers at Legazpi Active Park this Sunday.",
+    startDate: "2026-11-02",
+    venue: "Legazpi Active Park",
   },
   {
     id: 21,
@@ -944,6 +996,98 @@ const sampleConversations: Conversation[] = [
     ],
   },
 ]
+
+function EventsPage({ listings, onOpenListing }: { listings: Listing[]; onOpenListing: (l: Listing) => void }) {
+  const events = listings.filter((l) => l.startDate)
+  const [current, setCurrent] = useState(() => {
+    const d = new Date()
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+  })
+  const [selected, setSelected] = useState<string | null>(null)
+
+  const year = current.getFullYear()
+  const month = current.getMonth()
+  const first = new Date(year, month, 1).getDay()
+  const days = new Date(year, month + 1, 0).getDate()
+  const names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+  const dow = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+  const eventSet = new Set(events.map((e) => e.startDate as string))
+
+  const cells = []
+  for (let i = 0; i < first; i++) cells.push(<div key={"e" + i} className="ev-day empty" />)
+  for (let d = 1; d <= days; d++) {
+    const ds = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+    cells.push(
+      <button key={d} className={`ev-day ${ds === todayStr ? "today" : ""} ${selected === ds ? "sel" : ""} ${eventSet.has(ds) ? "has" : ""}`} onClick={() => setSelected(ds)}>
+        <span>{d}</span>
+        {eventSet.has(ds) && <i />}
+      </button>
+    )
+  }
+
+  const list = selected ? events.filter((e) => e.startDate === selected) : events.slice().sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""))
+  const header = selected ? new Date(selected + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "Upcoming events"
+
+  return (
+    <div className="ev-wrap">
+      <div className="ev-head">
+        <h1>Event calendar</h1>
+        <p>Browse community events by date</p>
+      </div>
+      <div className="ev-grid">
+        <aside className="ev-cal">
+          <div className="ev-cal-top">
+            <button onClick={() => setCurrent(new Date(year, month - 1, 1))}><Icon name="chevron" size={16} style={{ transform: "rotate(90deg)" }} /></button>
+            <div>{names[month]} {year}</div>
+            <button onClick={() => setCurrent(new Date(year, month + 1, 1))}><Icon name="chevron" size={16} style={{ transform: "rotate(-90deg)" }} /></button>
+          </div>
+          <div className="ev-dow">{dow.map((x) => <span key={x}>{x}</span>)}</div>
+          <div className="ev-cells">{cells}</div>
+          <div className="ev-cal-bot">
+            <button onClick={() => setSelected(todayStr)}>Today</button>
+            <button onClick={() => setSelected(null)}>See all</button>
+          </div>
+        </aside>
+        <section className="ev-list">
+          <div className="ev-list-top">
+            <h2>{header}</h2>
+            <span>{list.length} event{list.length === 1 ? "" : "s"}</span>
+          </div>
+          {list.length ? (
+            <div className="ev-items">
+              {list.map((ev) => (
+                <article key={ev.id} className="ev-item" onClick={() => onOpenListing(ev)}>
+                  <img src={ev.image} alt={ev.title} />
+                  <div>
+                    <h3>{ev.title}</h3>
+                    <div className="ev-meta">
+                      <span><Icon name="calendar" size={14} /> {ev.startDate}</span>
+                      <span><Icon name="clock" size={14} /> {ev.time}</span>
+                      {ev.venue && <span><Icon name="pin" size={14} /> {ev.venue}, {ev.location}</span>}
+                    </div>
+                    <p>{ev.description}</p>
+                    <div className="ev-foot">
+                      <b>{ev.price}</b>
+                      <button>View details</button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="ev-empty">
+              <Icon name="calendar" size={40} />
+              <div>No events on this day</div>
+              <button onClick={() => setSelected(null)}>View all events</button>
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  )
+}
 
 function Logo({ onClick }: { onClick: () => void }) {
   return (
@@ -1899,6 +2043,8 @@ function App() {
       <main className={activeCategory ? "category-page" : ""}>
         {active === "Help" ? (
           <HelpPage onBack={goHome} onAction={showToast} />
+        ) : active === "Events" ? (
+          <EventsPage listings={listings} onOpenListing={openListing} />
         ) : (
           <>
           {activeCategory ? (
