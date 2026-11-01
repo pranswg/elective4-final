@@ -2240,3 +2240,9 @@ main {
   padding-left: 28px;
   margin-top: 0;
 }
+
+/* Scrollable Location Select */
+.location-select-scroll {
+  height: 150px;
+  overflow-y: auto;
+}
