@@ -123,7 +123,30 @@ const RESUME_NOTICE =
 
 const CURRENT_USER = "Juan dela Cruz"
 
-const sellerName = (listing: Listing) => listing.seller ?? CURRENT_USER
+const POSTER_POOL = [
+  "Mara Dela Cruz",
+  "Carlo Reyes",
+  "Paolo Lim",
+  "Liza Mendoza",
+  "Ana Santos",
+  "Miguel Torres",
+  "Grace Villanueva",
+  "Ryan Aquino",
+  "Bea Fernandez",
+  "Nathan Ong",
+]
+
+const sellerName = (listing: Listing) =>
+  listing.seller ?? POSTER_POOL[listing.id % POSTER_POOL.length]
+
+const posterRole = (listing: Listing) => {
+  if (listing.startDate) return "Host"
+  if (listing.category === "For Sale" || listing.category === "Autos")
+    return "Seller"
+  if (listing.category === "Jobs") return "Employer"
+  if (listing.category === "Community") return "Organizer"
+  return "Posted by"
+}
 
 const sellerInitials = (name: string) =>
   name
@@ -371,6 +394,7 @@ const seedListings: Listing[] = [
     image: photo("photo-1638454668466-e8dbd5462f20"),
     description:
       "Bright 34 sqm unit with balcony, fiber internet, pool, and gym access. One-year lease preferred.",
+    seller: "Ana Santos",
   },
   {
     id: 6,
@@ -1588,7 +1612,7 @@ function App() {
     showToast(`Messaging ${name} about “${listing.title}”`)
   }
   const openListingChat = (listing: Listing) => {
-    if (listing.category === "For Sale") {
+    if (!isResumeCategory(listing.category)) {
       startSellerChat(listing)
       return
     }
@@ -2149,7 +2173,7 @@ function App() {
                       {displayPrice(listing)} <span>{listing.suffix}</span>
                     </div>
                     <h3>{listing.title}</h3>
-                    {listing.category === "For Sale" && (
+                    {!isResumeCategory(listing.category) && (
                       <p className="listing-seller">
                         <span>{sellerInitials(sellerName(listing))}</span>
                         {sellerName(listing)}
@@ -2663,29 +2687,29 @@ function App() {
                         {categoryLabel(selectedListing.category)}
                       </span>
                     </div>
+                    {!isResumeCategory(selectedListing.category) && (
+                      <div>
+                        <Icon name="user" size={20} />
+                        <span>
+                          <strong>{posterRole(selectedListing)}</strong>
+                          {sellerName(selectedListing)}
+                        </span>
+                      </div>
+                    )}
                     {selectedListing.category === "For Sale" && (
-                      <>
-                        <div>
-                          <Icon name="user" size={20} />
-                          <span>
-                            <strong>Seller</strong>
-                            {sellerName(selectedListing)}
+                      <div>
+                        <Icon name="tag" size={20} />
+                        <span>
+                          <strong>Status</strong>
+                          <span
+                            className={`detail-status${
+                              selectedListing.sold ? " sold" : ""
+                            }`}
+                          >
+                            {selectedListing.sold ? "Sold" : "Available"}
                           </span>
-                        </div>
-                        <div>
-                          <Icon name="tag" size={20} />
-                          <span>
-                            <strong>Status</strong>
-                            <span
-                              className={`detail-status${
-                                selectedListing.sold ? " sold" : ""
-                              }`}
-                            >
-                              {selectedListing.sold ? "Sold" : "Available"}
-                            </span>
-                          </span>
-                        </div>
-                      </>
+                        </span>
+                      </div>
                     )}
                     <div>
                       <Icon name="pin" size={20} />
@@ -2736,11 +2760,11 @@ function App() {
                       onClick={() => openListingChat(selectedListing)}
                     >
                       <Icon name="mail" size={18} />
-                      {selectedListing.category === "For Sale"
-                        ? `Chat with ${sellerFirstName(
+                      {isResumeCategory(selectedListing.category)
+                        ? "Chat"
+                        : `Chat with ${sellerFirstName(
                             sellerName(selectedListing),
-                          )}`
-                        : "Chat"}
+                          )}`}
                     </button>
                   </div>
                 </div>
