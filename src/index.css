@@ -2189,3 +2189,35 @@ main {
   color: #6728ca;
   font-size: 13px;
 }
+
+/* Price Number Input */
+.price-number-input {
+  width: 100%;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid #D5DCE6;
+  padding: 8px 12px;
+  transition: color, box-shadow, border-color 0.15s ease;
+  outline: none;
+  height: 44px;
+  background: white;
+  font-size: 14px;
+  margin-top: 6px;
+}
+.price-number-input::placeholder {
+  color: #5C6B7F;
+}
+.price-number-input:hover {
+  border-color: #B7C3D4;
+}
+.price-number-input:focus-visible {
+  border-color: #2F6FD6;
+  box-shadow: 0 0 0 3px rgba(47, 111, 214, 0.2);
+}
+.price-number-input:disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  border-color: #E4E7EC;
+  background: #F8FAFC;
+  color: #9AA4B2;
+}
