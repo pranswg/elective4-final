@@ -2252,7 +2252,7 @@ function App() {
                   </div>
                   <label>
                     Location
-                    <select name="location" defaultValue={selectedCity}>
+                    <select name="location" defaultValue={selectedCity} className="location-select-limited">
                       {[...cities, "Mandaluyong", "Marikina"].map((city) => (
                         <option key={city}>{city}</option>
                       ))}

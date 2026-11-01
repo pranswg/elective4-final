@@ -2254,3 +2254,11 @@ main {
 .post-form select.location-select-scroll option {
   padding: 6px 8px;
 }
+
+/* Limit visible items in dropdown */
+select.location-select-limited {
+  max-height: 120px;
+}
+select.location-select-limited:focus {
+  height: auto;
+}
