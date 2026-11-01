@@ -1437,7 +1437,12 @@ function EventsPage({ listings, onOpenListing }: { listings: Listing[]; onOpenLi
             <div className="ev-items">
               {list.map((ev) => (
                 <article key={ev.id} className="ev-item" onClick={() => onOpenListing(ev)}>
-                  <img src={ev.image} alt={ev.title} />
+                  <img
+                    src={ev.image}
+                    alt={ev.title}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div>
                     <h3>{ev.title}</h3>
                     <div className="ev-meta">
@@ -2055,6 +2060,7 @@ function App() {
       )
     : []
   const notifications = useMemo<AppNotification[]>(() => {
+    if (!account) return []
     const messages: AppNotification[] = conversations
       .filter((conversation) => conversation.unread)
       .map((conversation) => ({
@@ -2079,7 +2085,7 @@ function App() {
         listing,
       }))
     return [...messages, ...recentListings]
-  }, [cityFilter, conversations, listings])
+  }, [account, cityFilter, conversations, listings])
   const unreadNotificationCount = account
     ? notifications.filter(
         (notification) => !readNotifications.includes(notification.key),
@@ -2636,7 +2642,12 @@ function App() {
                         openListing(listing)
                       }}
                     >
-                      <img src={listing.image} alt="" />
+                      <img
+                        src={listing.image}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
                       <span>
                         <strong>{listing.title}</strong>
                         <small>
@@ -2994,6 +3005,8 @@ function App() {
             <img
               src="https://images.unsplash.com/photo-1591257773743-ea28737e33d9?auto=format&fit=crop&w=1800&q=90"
               alt="Manila skyline across the bay"
+              fetchPriority="high"
+              decoding="async"
             />
             <div className="hero-overlay" />
             <div className="hero-content">
@@ -3102,7 +3115,12 @@ function App() {
                   }
                 >
                   <div className="listing-image">
-                    <img src={listing.image} alt={listing.title} />
+                    <img
+                      src={listing.image}
+                      alt={listing.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
                     <span className="listing-category">
                       {categoryLabel(listing.category)}
                     </span>
@@ -3490,6 +3508,7 @@ function App() {
                             <img
                               src={image}
                               alt={`Listing preview ${index + 1}`}
+                              decoding="async"
                             />
                             {index === 0 && <span>Cover</span>}
                             <button
@@ -3849,6 +3868,8 @@ function App() {
                       className="detail-image"
                       src={detailImage || selectedListing.image}
                       alt={selectedListing.title}
+                      fetchPriority="high"
+                      decoding="async"
                     />
                     <span className="detail-photo-count">
                       {Math.max(
@@ -3879,6 +3900,8 @@ function App() {
                           <img
                             src={image}
                             alt={`${selectedListing.title} ${index + 1}`}
+                            loading="lazy"
+                            decoding="async"
                           />
                         </button>
                       ))}
@@ -4194,6 +4217,8 @@ function App() {
                   alt="Download on the App Store"
                   width={120}
                   height={40}
+                  loading="lazy"
+                  decoding="async"
                 />
               </a>
               <a
@@ -4206,6 +4231,8 @@ function App() {
                   alt="Get it on Google Play"
                   width={134}
                   height={40}
+                  loading="lazy"
+                  decoding="async"
                 />
               </a>
             </div>

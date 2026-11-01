@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Franklin:wght@700&display=swap');
 @import 'tailwindcss';
 @import './settings.css';
 
@@ -1511,6 +1510,10 @@ h2 { color: #0d2043; font-size: 19px; letter-spacing: -.4px; margin: 0; }
   .profile-menu { right: -3px; }
   .modal { padding: 22px; }
   .details-modal { padding: 0; }
+}
+
+@media (max-width: 360px) {
+  .location-menu { left: 0; transform: none; }
 }
 
 @media (max-width: 480px) {
@@ -3431,7 +3434,8 @@ select.location-select-limited:focus {
   body:has(.modal-backdrop),
   body:has(.settings-confirm-backdrop),
   body:has(.sidebar.open) { overflow: hidden; }
-  .modal-backdrop { padding: 12px; }
+  .modal-backdrop { padding: 12px; backdrop-filter: none; }
+  .drawer-backdrop { backdrop-filter: none; }
   .modal { overscroll-behavior: contain; }
   .modal:not(.details-modal) {
     max-height: calc(100dvh - 24px);
@@ -3704,4 +3708,94 @@ select.location-select-limited:focus {
   .help-search { margin-top: 16px; }
 
   .site-map h1 { font-size: 23px; }
+}
+
+/* Motion */
+:root { --ease-out: cubic-bezier(.22, .61, .36, 1); }
+
+@keyframes ui-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ui-menu-in {
+  from { opacity: 0; translate: 0 -4px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes ui-modal-in {
+  from { opacity: 0; translate: 0 10px; scale: .985; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes ui-toast-in {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.dropdown,
+.search-suggestions {
+  animation: ui-menu-in 160ms var(--ease-out);
+}
+.modal-backdrop,
+.drawer-backdrop,
+.settings-confirm-backdrop {
+  animation: ui-fade-in 160ms ease-out;
+}
+.modal,
+.settings-confirm {
+  animation: ui-modal-in 190ms var(--ease-out);
+}
+.toast {
+  animation: ui-toast-in 180ms var(--ease-out);
+}
+
+.dropdown button,
+.search-suggestion {
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.primary-button,
+.secondary-button,
+.login-submit,
+.help-contact-submit,
+.empty-state button {
+  transition: background-color 140ms ease, border-color 140ms ease,
+    color 140ms ease, translate 90ms ease;
+}
+.primary-button:hover,
+.empty-state button:hover {
+  background: #5a20b4;
+}
+.secondary-button:hover {
+  background: #f7f4fe;
+}
+.primary-button:active,
+.secondary-button:active,
+.login-submit:active,
+.help-contact-submit:active,
+.empty-state button:active {
+  translate: 0 1px;
+}
+
+.header-actions .notification-bell,
+.header-actions .app-promo-trigger {
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.header-actions .notification-bell:hover,
+.header-actions .app-promo-trigger:hover {
+  background: #ece6fb;
+  color: #6728ca;
+}
+
+.ev-day {
+  transition: background-color 140ms ease, border-color 140ms ease,
+    color 140ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
