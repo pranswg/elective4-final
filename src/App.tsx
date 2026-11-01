@@ -1402,6 +1402,7 @@ function App() {
   const [selectedConversation, setSelectedConversation] =
     useState<number | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [postPrice, setPostPrice] = useState(5000)
 
   const searchSuggestions = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -2236,11 +2237,23 @@ function App() {
                     </label>
                     <label>
                       Price or rate
-                      <input
-                        name="price"
-                        required
-                        placeholder="e.g. ₱5,000 or Free"
-                      />
+                      <div className="price-slider-container">
+                        <input
+                          type="range"
+                          min="0"
+                          max="100000"
+                          step="500"
+                          value={postPrice}
+                          onChange={(e) => setPostPrice(Number(e.target.value))}
+                          className="price-slider"
+                        />
+                        <div className="price-slider-labels">
+                          <span>Free</span>
+                          <span className="price-slider-value">₱{postPrice.toLocaleString()}</span>
+                          <span>₱100k+</span>
+                        </div>
+                      </div>
+                      <input type="hidden" name="price" value={postPrice === 0 ? "Free" : `₱${postPrice.toLocaleString()}`} />
                     </label>
                   </div>
                   <label>

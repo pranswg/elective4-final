@@ -2140,3 +2140,52 @@ main {
     padding: 16px;
   }
 }
+
+/* Price Slider */
+.price-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.price-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 5px;
+  background: linear-gradient(to right, #e5e7eb 0%, #6728ca 50%, #e5e7eb 100%);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.price-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #6728ca;
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(103, 40, 202, 0.4);
+}
+.price-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #6728ca;
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(103, 40, 202, 0.4);
+}
+.price-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #6b7280;
+}
+.price-slider-value {
+  font-weight: 600;
+  color: #6728ca;
+  font-size: 13px;
+}
